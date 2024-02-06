@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+		<title>Simulator</title>
+	<link rel="stylesheet" href="index.css">
+</head>
+<body>
+	<div id="header">
+		Simulator
+	</div>
+	<div id="toolbar">
+    <div class="container" id="output-container">
+      <label id="mouse-position-label">Mouse Pos:</label>
+		</div>
+		<div class="container" id="input-container">
+      <label id="shape-count-label" style="font-size: 12px;">Shapes To Spawn:</label>
+      <input id="shape-count-input" type="number" value="1" />
+		</div>
+	</div>
+	<div id="content">
+		<svg id="display-svg"></svg>
+	</div>
+  <script src="ds.js"></script>
+  <script src="util.js"></script>
+  <script src="math.js"></script>
+  <script src="physics.js"></script>
+	<script src="index.js"></script>
+</body>
+</html>
+
