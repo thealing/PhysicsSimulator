@@ -342,10 +342,10 @@ class PhysicsWorld {
       }
       body.position.add(Vector2.add(body.linearVelocity, body.linearVelocityCorrection).multiply(deltaTime));
       body.angle += (body.angularVelocity + body.angularVelocityCorrection) * deltaTime;
-      body.linearVelocity.add(Vector2.multiply(body.linearVelocityCorrection, 0.4));
-      body.angularVelocity += body.angularVelocityCorrection * 0.4;
-      body.linearVelocityCorrection.divide(2);
-      body.angularVelocityCorrection /= 2;
+      body.linearVelocity.add(Vector2.multiply(body.linearVelocityCorrection, Physics.correctionVelocityGain));
+      body.angularVelocity += body.angularVelocityCorrection * Physics.correctionVelocityGain;
+      body.linearVelocityCorrection.multiply(0);
+      body.angularVelocityCorrection *= 0;
       body.worldTransformIsDirty = true;
       body.updateWorldTransform();
     }
@@ -706,6 +706,8 @@ class Geometry {
 }
 
 class Physics {
+  static correctionVelocityGain = 0.1;
+
   static collide(collider1, collider2) {
     const collision = Geometry.collideShapes(collider1.worldShape, collider2.worldShape);
     return collision == null ? null : {collider1, collider2, collision};

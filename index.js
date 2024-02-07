@@ -1,23 +1,24 @@
-let mousePositionLabel;
-let shapeCountInput;
-let displaySvg;
-let physicsWorld;
-
 init();
 
 function init() {
-  mousePositionLabel = document.getElementById("mouse-position-label");
-  shapeCountInput = document.getElementById("shape-count-input");
+  mousePositionOutput = document.getElementById("mouse-position-output");
+  bodyCountOutput = document.getElementById("body-count-output");
+  colliderCountOutput = document.getElementById("collider-count-output");
+  stepDurationOutput = document.getElementById("step-duration-output");
+  correctionVelocityGainInput = document.getElementById("correction-velocity-gain-input");
+  shapesToSpawnInput = document.getElementById("shapes-to-spawn-input");
+  shapeSizeInput = document.getElementById("shape-size-input");
+  shapeGapInput = document.getElementById("shape-gap-input");
   displaySvg = document.getElementById("display-svg");
   physicsWorld = new PhysicsWorld();
   physicsExceptionOccurred = false;
   displaySvg.addEventListener("mouseup", onDisplayClicked);
-  physicsWorld.gravity.y = 1000;
+  physicsWorld.gravity.y = 400;
   document.addEventListener('mousemove', (event) => {
     const displayRect = displaySvg.getBoundingClientRect();
     const mouseX = event.clientX - displayRect.left;
     const mouseY = event.clientY - displayRect.top;
-    mousePositionLabel.textContent = "Mouse Pos: " + mouseX + " " + mouseY;
+    this.mousePositionOutput.value = mouseX + " , " + mouseY;
   });
   setTimeout(() => {
     const svgRect = displaySvg.getBoundingClientRect();
@@ -37,19 +38,22 @@ function init() {
 }
 
 function update() {
+  Physics.correctionVelocityGain = Number(correctionVelocityGainInput.value);
   physicsWorld.step(0.01);
-  console.table(physicsWorld.counters);
+  bodyCountOutput.value = physicsWorld.counters.bodies;
+  colliderCountOutput.value = physicsWorld.counters.colliders;
+  stepDurationOutput.value = physicsWorld.counters.stepDuration.toFixed(3);
   for (const body of physicsWorld.bodies) {
     body.element && setSvgPosition(body.element, body.position.x, body.position.y, body.angle);
   }
 }
 
-function createSvgCircle() {
+function createSvgCircle(radius) {
 	const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
 	const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 	circle.setAttribute("cx", 0);
 	circle.setAttribute("cy", 0);
-	circle.setAttribute("r", 10);
+	circle.setAttribute("r", radius);
 	circle.setAttribute("fill", "red");
 	circle.setAttribute("stroke", "black");
 	circle.setAttribute("stroke-width", 1);
@@ -58,13 +62,13 @@ function createSvgCircle() {
 	return group;
 }
 
-function createSvgSquare() {
+function createSvgSquare(radius) {
   const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   const square = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  square.setAttribute("x", -10);
-  square.setAttribute("y", -10);
-  square.setAttribute("width", 10 * 2);
-  square.setAttribute("height", 10 * 2);
+  square.setAttribute("x", -radius);
+  square.setAttribute("y", -radius);
+  square.setAttribute("width", radius * 2);
+  square.setAttribute("height", radius * 2);
   square.setAttribute("fill", "red");
   square.setAttribute("stroke", "black");
   square.setAttribute("stroke-width", 1);
@@ -81,21 +85,24 @@ function onDisplayClicked(event) {
   if (event.target != displaySvg) {
     return;
   }
-  const shapesToSpawn = shapeCountInput.value;
+  const shapeSize = Number(shapeSizeInput.value);
+  const shapesToSpawn = Number(shapesToSpawnInput.value);
+  const shapeGap = Number(shapeGapInput.value);
+  const shapesInARow = Math.ceil(Math.sqrt(shapesToSpawn));
   for (let i = 0; i < shapesToSpawn; i++) {
     if (Math.random() < 0.5) {
-      var shape = new Circle(new Vector2(0, 0), 10);
-      var svgElement = createSvgCircle();
+      var shape = new Circle(new Vector2(0, 0), shapeSize);
+      var svgElement = createSvgCircle(shapeSize);
     }
     else {
-      var shape = Geometry.createSquare(0, 0, 10);
-      var svgElement = createSvgSquare();
+      var shape = Geometry.createSquare(0, 0, shapeSize);
+      var svgElement = createSvgSquare(shapeSize);
     }
     const body = physicsWorld.createBody(PhysicsBodyType.DYNAMIC);
     const collider = body.createCollider(shape, 1);
     const displayRect = displaySvg.getBoundingClientRect();
-    const x = event.pageX - displayRect.left + Math.random();
-    const y = event.pageY - displayRect.top + Math.random();
+    const x = event.pageX - displayRect.left + (Math.floor(i % shapesInARow) - Math.floor(shapesInARow / 2)) * (shapeSize * 2 + shapeGap);
+    const y = event.pageY - displayRect.top + (Math.floor(i / shapesInARow) - Math.floor(shapesToSpawn / shapesInARow / 2)) * (shapeSize * 2 + shapeGap);
     body.position.x = x;
     body.position.y = y;
     body.element = svgElement;

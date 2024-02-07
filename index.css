@@ -8,7 +8,7 @@
 	color: black;
 	font-family: Verdana, sans-serif;
 
-	--toolbar-width: 200px;
+	--toolbar-width: 240px;
 	--header-height: 50px;
 	--control-height: 30px;
 	--padding: 10px;
@@ -45,12 +45,12 @@ body {
 	right: 0;
 	top: var(--header-height);
 	padding: var(--padding);
+  padding-left: 0;
 	background: lightgray;
 	border-left: solid 1px black;
 }
 
 #toolbar * {
-	position: absolute;
 	width: calc(100% - 2 * var(--padding));
 	height: var(--control-height);
 	border: solid 1px black;
@@ -67,20 +67,37 @@ body {
 	display: flex;
 	align-items: center;
 	border: none;
+  font-size: 13px;
+}
+
+#toolbar .container input {
+	padding-left: 3px;
 }
 
 #toolbar .container * {
+  left: var(--padding);
 	position: relative;
 }
 
+#toolbar .separator {
+  border: none;
+  border-bottom: solid 1px black;
+  width: var(--toolbar-width);
+  height: 0px;
+  margin-top: var(--padding);
+  margin-bottom: var(--padding);
+}
+
 #toolbar #input-container {
-	height: calc(1 * var(--control-height));
-	grid-template-columns: 100px 100px;
+	height: calc(4 * (var(--control-height) + var(--padding)) - var(--padding));
+	grid-template-columns: 120px 120px;
+  grid-row-gap: var(--padding);
 }
 
 #toolbar #output-container {
-	height: calc(1 * var(--control-height));
-	grid-template-columns: 200px;
+	height: calc(4 * (var(--control-height) + var(--padding)) - var(--padding));
+	grid-template-columns: 120px 120px;
+  grid-row-gap: var(--padding);
 }
 
 #toolbar button:hover {
