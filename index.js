@@ -6,6 +6,7 @@ function init() {
   colliderCountOutput = document.getElementById("collider-count-output");
   stepDurationOutput = document.getElementById("step-duration-output");
   correctionVelocityGainInput = document.getElementById("correction-velocity-gain-input");
+  gravityInput = document.getElementById("gravity-input");
   shapesToSpawnInput = document.getElementById("shapes-to-spawn-input");
   shapeSizeInput = document.getElementById("shape-size-input");
   shapeGapInput = document.getElementById("shape-gap-input");
@@ -34,18 +35,24 @@ function init() {
     body.createCollider(Geometry.createSegment(corner3, corner4), 1);
     body.createCollider(Geometry.createSegment(corner4, corner1), 1);
   }, 0);
+  // setTimeout(addRandomShapes, 1000);
   setInterval(update, 10);
+  const animate = () => {
+    for (const body of physicsWorld.bodies) {
+      body.element && setSvgPosition(body.element, body.position.x, body.position.y, body.angle);
+    }
+    requestAnimationFrame(animate);
+  };
+  requestAnimationFrame(animate);
 }
 
 function update() {
   Physics.correctionVelocityGain = Number(correctionVelocityGainInput.value);
+  physicsWorld.gravity.y = Number(gravityInput.value);
   physicsWorld.step(0.01);
   bodyCountOutput.value = physicsWorld.counters.bodies;
   colliderCountOutput.value = physicsWorld.counters.colliders;
   stepDurationOutput.value = physicsWorld.counters.stepDuration.toFixed(3);
-  for (const body of physicsWorld.bodies) {
-    body.element && setSvgPosition(body.element, body.position.x, body.position.y, body.angle);
-  }
 }
 
 function createSvgCircle(radius) {
@@ -103,6 +110,30 @@ function onDisplayClicked(event) {
     const displayRect = displaySvg.getBoundingClientRect();
     const x = event.pageX - displayRect.left + (Math.floor(i % shapesInARow) - Math.floor(shapesInARow / 2)) * (shapeSize * 2 + shapeGap);
     const y = event.pageY - displayRect.top + (Math.floor(i / shapesInARow) - Math.floor(shapesToSpawn / shapesInARow / 2)) * (shapeSize * 2 + shapeGap);
+    body.position.x = x;
+    body.position.y = y;
+    body.element = svgElement;
+  }
+}
+
+function addRandomShapes() {
+  const shapeSize = 10;
+  const shapesToSpawn = 1700;
+  const shapeGap = 5;
+  const shapesInARow = Math.ceil(Math.sqrt(shapesToSpawn));
+  for (let i = 0; i < shapesToSpawn; i++) {
+    if (Math.random() < 0.5) {
+      var shape = new Circle(new Vector2(0, 0), shapeSize);
+      var svgElement = createSvgCircle(shapeSize);
+    }
+    else {
+      var shape = Geometry.createSquare(0, 0, shapeSize);
+      var svgElement = createSvgSquare(shapeSize);
+    }
+    const body = physicsWorld.createBody(PhysicsBodyType.DYNAMIC);
+    const collider = body.createCollider(shape, 1);
+    const x = 15 + Math.floor(i % shapesInARow) * (shapeSize * 2 + shapeGap);
+    const y = 15 + Math.floor(i / shapesInARow) * (shapeSize * 2 + shapeGap);
     body.position.x = x;
     body.position.y = y;
     body.element = svgElement;

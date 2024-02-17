@@ -89,7 +89,7 @@ body {
 }
 
 #toolbar #input-container {
-	height: calc(4 * (var(--control-height) + var(--padding)) - var(--padding));
+	height: calc(5 * (var(--control-height) + var(--padding)) - var(--padding));
 	grid-template-columns: 120px 120px;
   grid-row-gap: var(--padding);
 }

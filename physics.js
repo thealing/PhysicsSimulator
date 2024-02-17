@@ -278,6 +278,7 @@ class PhysicsWorld {
         }
         this.counters.collisionsDetected++;
         if (!collider1.sensor && !collider2.sensor) {
+          this.counters.collisionsHandled++;
           collisions.push(collision);
         }
       }
