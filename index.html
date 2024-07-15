@@ -6,32 +6,80 @@
 	<link rel="stylesheet" href="index.css">
 </head>
 <body>
-	<div id="header">Simulator</div>
+	<div id="header">Physics Sandbox</div>
 	<div id="toolbar">
-    <div class="container" id="output-container">
-      <label id="mouse-position-label">Mouse Pos</label>
-      <input id="mouse-position-output" type="string" value="" readonly />
-      <label id="body-count-label">Body Count</label>
-      <input id="body-count-output" type="string" value="" readonly />
-      <label id="collider-count-label">Collider Count</label>
-      <input id="collider-count-output" type="string" value="" readonly />
-      <label id="step-duration-label">Step Duration</label>
-      <input id="step-duration-output" type="string" value="" readonly />
+    <div class="container" id="title-container" style="--row-count: 1;">
+      <label>Simulation Info</label>
+    </div>
+    <div class="container" id="form-container" style="--row-count: 3;">
+      <label>Body Count</label>
+      <input id="body-count" type="string" value="" readonly />
+      <label>Collider Count</label>
+      <input id="collider-count" type="string" value="" readonly />
+      <label>Step Duration</label>
+      <input id="step-duration" type="string" value="" readonly />
 		</div>
     <div class="separator"></div>
-		<div class="container" id="input-container">
-      <label id="correction-velocity-gain-label" title="Correction Velocity Gain In Physics Simulator (Between 0 And 1)">CVG</label>
-      <input id="correction-velocity-gain-input" type="number" value="0.5" step="0.1" />
-      <label id="gravity-label" title="Gravity In Physics Simulator">Gravity</label>
-      <input id="gravity-input" type="number" value="500" step="100" />
-      <label id="shapes-to-spawn-label">Shapes To Spawn</label>
-      <input id="shapes-to-spawn-input" type="number" value="1" />
-      <label id="shape-size-label">Shape Size</label>
-      <input id="shape-size-input" type="number" value="10" />
-      <label id="shape-gap-label">Shape Gap</label>
-      <input id="shape-gap-input" type="number" value="0" />
+    <div class="container" id="title-container" style="--row-count: 1;">
+      <label>Physics Settings</label>
+    </div>
+		<div class="container" id="form-container" style="--row-count: 4;">
+      <label>Delta Time</label>
+      <input id="delta-time" type="number" value="10" step="1" />
+      <label>Gravity</label>
+      <input id="gravity" type="number" value="500" step="100" />
+      <label>CVG</label>
+      <input id="cvg" type="number" value="0.5" step="0.1" />
+      <label>CTM</label>
+      <input id="ctm" type="number" value="0.01"  step="0.005" />
+		</div>
+    <div class="container" id="wide-container" style="--row-count: 1;">
+      <button id="apply-button">Apply</button>
+    </div>
+    <div class="separator"></div>
+    <div class="container" id="title-container" style="--row-count: 1;">
+      <label>Adding Bodies (L. Click)</label>
+    </div>
+		<div class="container" id="form-container" style="--row-count: 4;">
+      <label>Rows</label>
+      <input id="row-count" type="number" value="2" />
+      <label>Columns</label>
+      <input id="column-count" type="number" value="3" />
+      <label>Scale</label>
+      <input id="spawn-size" type="number" value="1" />
+      <label>Gap</label>
+      <input id="spawn-gap" type="number" value="5" />
+		</div>
+    <div class="container" id="wide-container" style="--row-count: 1;">
+      <button id="edit-button">Edit Shape</button>
+    </div>
+    <div class="separator"></div>
+    <div class="container" id="title-container" style="--row-count: 1;">
+      <label>Adding Springs (R. Click)</label>
+    </div>
+		<div class="container" id="form-container" style="--row-count: 2;">
+      <label>Stiffness</label>
+      <input id="stifness" type="number" value="100" />
+      <label>Resting Length</label>
+      <input id="resting-length" type="number" value="-1" />
 		</div>
     <div class="separator"></div>
+    <div class="container" id="title-container" style="--row-count: 1;">
+      <label>Deleting (M. Click)</label>
+    </div>
+    <div class="container" id="form-container" style="--row-count: 3;">
+      <label>Delete Bodies</label>
+      <input type="checkbox" id="delete-bodies" checked="true" />
+      <label>Delete Springs</label>
+      <input type="checkbox" id="delete-springs" checked="true" />
+      <label>Sweep</label>
+      <input type="checkbox" id="delete-by-sweep" />
+		</div>
+    <div class="separator"></div>
+    <div class="container" id="wide-container">
+      <button id="pause-button">Pause</button>
+      <button id="clear-button">Clear</button>
+    </div>
 	</div>
 	<div id="content">
 		<svg id="display-svg"></svg>

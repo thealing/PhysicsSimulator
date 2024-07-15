@@ -109,6 +109,10 @@ class Vector2 {
     return v.x === w.x && v.y === w.y;
   }
 
+  static negate(v) {
+    return new Vector2(-v.x, -v.y);
+  }
+
   static add(v, w) {
     return new Vector2(v.x + w.x, v.y + w.y);
   }
@@ -163,6 +167,14 @@ class Transform {
     return this;
   }
 
+  set2(x, y, c, s) {
+    this.x = x;
+    this.y = y;
+    this.c = c;
+    this.s = s;
+    return this;
+  }
+
   copy(t) {
     this.x = t.x;
     this.y = t.y;
@@ -172,6 +184,6 @@ class Transform {
   }
 
   invert() {
-    return this.set(-this.c * this.x - this.s * this.y, this.s * this.x - this.c * this.y, this.c, -this.s);
+    return this.set2(-this.c * this.x - this.s * this.y, this.s * this.x - this.c * this.y, this.c, -this.s);
   }
 }

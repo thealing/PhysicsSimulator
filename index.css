@@ -6,11 +6,13 @@
 	outline: none;
 	background: lightgray;
 	color: black;
+	accent-color: black;
 	font-family: Verdana, sans-serif;
 
 	--toolbar-width: 240px;
 	--header-height: 50px;
 	--control-height: 30px;
+  --wide-height: 40px;
 	--padding: 10px;
 }
 
@@ -42,6 +44,7 @@ body {
 	position: absolute;
 	width: var(--toolbar-width);
 	height: calc(100% - var(--header-height));
+  min-height: 900px;
 	right: 0;
 	top: var(--header-height);
 	padding: var(--padding);
@@ -54,6 +57,30 @@ body {
 	width: calc(100% - 2 * var(--padding));
 	height: var(--control-height);
 	border: solid 1px black;
+}
+
+#toolbar input[readonly] {
+  background: rgb(190, 190, 190);
+}
+
+#toolbar #wide-container * {
+  height: var(--wide-height);
+  font-size: 17px;
+}
+
+#toolbar #title-container * {
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+}
+
+#toolbar button:hover {
+	background: darkgray;
+}
+
+#toolbar button:active {
+	background: dimgray;
 }
 
 #toolbar .container {
@@ -88,24 +115,26 @@ body {
   margin-bottom: var(--padding);
 }
 
-#toolbar #input-container {
-	height: calc(5 * (var(--control-height) + var(--padding)) - var(--padding));
+#toolbar input[type="checkbox"] {
+	filter: brightness(82%);
+}
+
+#toolbar #form-container {
+	height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
 	grid-template-columns: 120px 120px;
   grid-row-gap: var(--padding);
 }
 
-#toolbar #output-container {
-	height: calc(4 * (var(--control-height) + var(--padding)) - var(--padding));
-	grid-template-columns: 120px 120px;
+#toolbar #title-container {
+	height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
+	grid-template-columns: 240px;
   grid-row-gap: var(--padding);
 }
 
-#toolbar button:hover {
-	background: darkgray;
-}
-
-#toolbar button:active {
-	background: dimgray;
+#toolbar #wide-container {
+	height: calc(var(--row-count) * (var(--wide-height) + var(--padding)) - var(--padding));
+	grid-template-columns: 240px;
+  grid-row-gap: var(--padding);
 }
 
 #content {

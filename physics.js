@@ -9,11 +9,6 @@ class PhysicsBodyType {
   static STATIC = 1;
 };
 
-class PhysicsJointType {
-  static FIXED = 0;
-  static PIN = 1;
-};
-
 class Circle {
   constructor(center, radius) {
     this.type = ShapeType.CIRCLE;
@@ -56,6 +51,10 @@ class Circle {
   getAngularMassFactor() {
     return this.radius ** 2 / 2;
   }
+
+  testPoint(point) {
+    return Vector2.distanceSquared(this.center, point) <= this.radius ** 2;
+  }
 }
 
 class Polygon {
@@ -70,6 +69,9 @@ class Polygon {
 
   set(points) {
     this.points = points;
+    if (this.getLinearMassFactor() < 0) {
+      this.points.reverse();
+    }
     return this;
   }
 
@@ -133,6 +135,15 @@ class Polygon {
     }
     return numer / denom - this.getCentroid().length();
   }
+
+  testPoint(point) {
+    for (let i = this.points.length - 1, j = 0; j < this.points.length; i = j, j++) {
+      if (Vector2.cross(Vector2.subtract(this.points[j], this.points[i]), Vector2.subtract(point, this.points[i])) < 0) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 class Rect {
@@ -184,7 +195,6 @@ class PhysicsCounters {
     this.bodies = 0;
     this.colliders = 0;
     this.springs = 0;
-    this.joints = 0;
     this.boundingRectsSkipped = 0;
     this.boundingRectsTested = 0;
     this.shapesTested = 0;
@@ -200,7 +210,6 @@ class PhysicsWorld {
     this.bodies = new List();
     this.colliders = new List();
     this.springs = new List();
-    this.joints = new List();
     this.counters = new PhysicsCounters();
   }
 
@@ -214,9 +223,6 @@ class PhysicsWorld {
     for (const spring of this.springs) {
       spring.destroy();
     }
-    for (const joint of this.joints) {
-      joint.destroy();
-    }
   }
 
   createBody(type) {
@@ -228,17 +234,29 @@ class PhysicsWorld {
     this.counters.bodies = this.bodies.size;
     this.counters.colliders = this.colliders.size;
     this.counters.springs = this.springs.size;
-    this.counters.joints = this.joints.size;
     const stepStartTime = performance.now();
     for (const body of this.bodies) {
       body.updateWorldTransform();
     }
     for (const body of this.bodies) {
-      if (body.type == PhysicsBodyType.DYNAMIC) {
-        body.linearVelocity.addScaled(this.gravity, deltaTime);
-        body.linearVelocity.addScaled(body.linearForce, body.inverseLinearMass * deltaTime);
-        body.angularVelocity += body.angularForce * body.inverseAngularMass * deltaTime;
+      if (body.type == PhysicsBodyType.STATIC) {
+        body.linearVelocity.set(0, 0);
+        body.angularVelocity = 0;
+        continue;
       }
+      body.linearVelocity.addScaled(this.gravity, deltaTime);
+      body.linearVelocity.addScaled(body.linearForce, body.inverseLinearMass * deltaTime);
+      body.angularVelocity += body.angularForce * body.inverseAngularMass * deltaTime;
+    }
+    for (const spring of physicsWorld.springs) {
+      const vector = Vector2.subtract(spring.worldAnchor2, spring.worldAnchor1);
+      const distance = vector.length();
+      if (distance == 0) {
+        continue;
+      }
+      vector.normalize().multiply((spring.restingLength - distance) * spring.stiffness);
+      spring.body1.applyImpulseAtWorldPoint(spring.worldAnchor1, Vector2.negate(vector));
+      spring.body2.applyImpulseAtWorldPoint(spring.worldAnchor2, vector);
     }
     for (let colliderNode = this.colliders.first, next; colliderNode != null; colliderNode = next) {
       next = colliderNode.next;
@@ -327,7 +345,7 @@ class PhysicsWorld {
       const contactVelocity2 = Vector2.multiply(tangent2, body2.angularVelocity).add(body2.linearVelocity);
       const relativeVelocity = Vector2.subtract(contactVelocity2, contactVelocity1);
       const normalVelocity = Vector2.dot(collision.normal, relativeVelocity);
-      let correctionInpulse = collision.depth / deltaTime - normalVelocity;
+      let correctionInpulse = collision.depth / Math.max(deltaTime, Physics.correctionTimeMin) - normalVelocity;
       if (correctionInpulse <= 0) {
         continue;
       }
@@ -343,8 +361,10 @@ class PhysicsWorld {
       }
       body.position.add(Vector2.add(body.linearVelocity, body.linearVelocityCorrection).multiply(deltaTime));
       body.angle += (body.angularVelocity + body.angularVelocityCorrection) * deltaTime;
-      body.linearVelocity.add(Vector2.multiply(body.linearVelocityCorrection, Physics.correctionVelocityGain));
-      body.angularVelocity += body.angularVelocityCorrection * Physics.correctionVelocityGain;
+      const linearVelocityChange = Vector2.multiply(body.linearVelocityCorrection, Physics.correctionVelocityGain);
+      const angularVelocityChange = body.angularVelocityCorrection * Physics.correctionVelocityGain;
+      body.linearVelocity.add(linearVelocityChange);
+      body.angularVelocity += angularVelocityChange;
       body.linearVelocityCorrection.multiply(0);
       body.angularVelocityCorrection *= 0;
       body.worldTransformIsDirty = true;
@@ -375,13 +395,11 @@ class PhysicsBody {
     this.worldTransformIsDirty = false;
     this.colliders = new List();
     this.springs = new List();
-    this.joints = new List();
   }
 
   destroy() {
-    destroyAllColliders();
-    destroyAllSprings();
-    destroyAllJoints();
+    this.destroyAllColliders();
+    this.destroyAllSprings();
     this.nodeInWorld.remove();
     this.nodeInWorld = null;
     this.world = null;
@@ -400,12 +418,6 @@ class PhysicsBody {
   destroyAllSprings() {
     for (const spring of this.springs) {
       spring.destroy();
-    }
-  }
-
-  destroyAllJoints() {
-    for (const joint of this.joints) {
-      joint.destroy();
     }
   }
 
@@ -458,14 +470,6 @@ class PhysicsBody {
       }
       if (spring.body2 == this) {
         spring.worldAnchor2.transformOf(spring.localAnchor2, transform);
-      }
-    }
-    for (const joint of this.joints) {
-      if (joint.body1 == this) {
-        joint.worldAnchor1.transformOf(joint.localAnchor1, transform);
-      }
-      if (joint.body2 == this) {
-        joint.worldAnchor2.transformOf(joint.localAnchor2, transform);
       }
     }
     this.worldTransformIsDirty = false;
@@ -539,11 +543,25 @@ class PhysicsCollider {
 }
 
 class PhysicsSpring {
-  
-}
+  constructor(body1, anchor1, body2, anchor2) {
+    this.body1 = body1;
+    this.body2 = body2;
+    this.worldAnchor1 = anchor1;
+    this.worldAnchor2 = anchor2;
+    this.localAnchor1 = new Vector2().transformOf(anchor1, body1.getInverseTransform());
+    this.localAnchor2 = new Vector2().transformOf(anchor2, body2.getInverseTransform());
+    this.stiffness = 0;
+    this.restingLength = Vector2.distance(anchor1, anchor2);
+    this.nodeInBody1 = body1.springs.insertLast(this);
+    this.nodeInBody2 = body2.springs.insertLast(this);
+    this.nodeInWorld = body1.world.springs.insertLast(this);
+  }
 
-class PhysicsJoint {
-
+  destroy() {
+    this.nodeInWorld.remove();
+    this.nodeInBody1.remove();
+    this.nodeInBody2.remove();
+  }
 }
 
 class Geometry {
@@ -674,20 +692,21 @@ class Geometry {
     let collisionDepth = Number.POSITIVE_INFINITY;
     let collisionPoint = null;
     let collisionNormal = null;
+    let collidedPerpendicularly = false;
     for (let i = polygon.points.length - 1, j = 0; j < polygon.points.length; i = j, j++) {
       const a = polygon.points[i];
       const b = polygon.points[j];
-      const axis = Vector2.subtract(b, a).rotateLeft();
-      const centerProjected = Geometry.projectOntoSegment(a, b, circle.center);
-      if (!Vector2.equal(centerProjected, circle.center)) {
-        if (Vector2.dot(circle.center, axis) >= Vector2.dot(centerProjected, axis)) {
-          axis.copy(circle.center).subtract(centerProjected);
-        }
-        else {
-          axis.copy(centerProjected).subtract(circle.center);
-        }
-        axis.normalize();
+      if (Vector2.equal(a, b)) {
+        continue;
       }
+      const centerProjected = Geometry.projectOntoLine(a, b, circle.center);
+      if (Vector2.equal(centerProjected, circle.center)) {
+        continue;
+      }
+      if (Vector2.equal(centerProjected, Geometry.projectOntoSegment(a, b, circle.center))) {
+        collidedPerpendicularly = true;
+      }
+      const axis = Vector2.subtract(b, a).rotateLeft().normalize();
       const depth = circle.radius + Vector2.dot(circle.center, axis) - Vector2.dot(centerProjected, axis);
       if (depth < 0) {
         return null;
@@ -697,6 +716,39 @@ class Geometry {
         collisionPoint = centerProjected;
         collisionNormal = axis;
       }
+    }
+    if (!collidedPerpendicularly) {
+      for (let i = polygon.points.length - 1, j = 0; j < polygon.points.length; i = j, j++) {
+        const a = polygon.points[i];
+        const b = polygon.points[j];
+        if (Vector2.equal(a, b)) {
+          continue;
+        }
+        const centerProjected = Geometry.projectOntoSegment(a, b, circle.center);
+        if (Vector2.equal(centerProjected, circle.center)) {
+          continue;
+        }
+        const axis = Vector2.subtract(b, a).rotateLeft();
+        if (Vector2.dot(circle.center, axis) >= Vector2.dot(centerProjected, axis)) {
+          axis.copy(circle.center).subtract(centerProjected);
+        }
+        else {
+          axis.copy(centerProjected).subtract(circle.center);
+        }
+        axis.normalize();
+        const depth = circle.radius + Vector2.dot(circle.center, axis) - Vector2.dot(centerProjected, axis);
+        if (depth < 0) {
+          return null;
+        }
+        if (depth < collisionDepth) {
+          collisionDepth = depth;
+          collisionPoint = centerProjected;
+          collisionNormal = axis;
+        }
+      }
+    }
+    if (collisionDepth == Number.POSITIVE_INFINITY) {
+      return null;
     }
     return {
       point: collisionPoint,
@@ -708,6 +760,7 @@ class Geometry {
 
 class Physics {
   static correctionVelocityGain = 0.1;
+  static correctionTimeMin = 0.01;
 
   static collide(collider1, collider2) {
     const collision = Geometry.collideShapes(collider1.worldShape, collider2.worldShape);
