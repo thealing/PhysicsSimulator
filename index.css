@@ -161,7 +161,7 @@ input {
   padding: 0;
   width: calc(100% - 2 * var(--padding));
   max-height: calc(100% - 2 * var(--padding));
-  aspect-ratio: 1 / 1;
+  height: 100%;
 }
 
 #content svg text {

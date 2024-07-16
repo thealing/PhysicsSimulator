@@ -13,6 +13,9 @@ function init() {
   gravityInput = document.getElementById("gravity");
   cvgInput = document.getElementById("cvg");
   ctmInput = document.getElementById("ctm");
+  wallTypeSelect = document.getElementById("wall-type");
+  wallRestitutionInput = document.getElementById("wall-restitution");
+  wallFrictionInput = document.getElementById("wall-friction");
   spawnRowsInput = document.getElementById("row-count");
   spawnColumnsInput = document.getElementById("column-count");
   shapeSizeInput = document.getElementById("spawn-size");
@@ -24,6 +27,7 @@ function init() {
   editButton = document.getElementById("edit-button"); 
   stifnessInput = document.getElementById("stifness");
   restingLengthInput = document.getElementById("resting-length");
+  deleteWallsInput = document.getElementById("delete-walls");
   deleteBodiesInput = document.getElementById("delete-bodies");
   deleteSpringsInput = document.getElementById("delete-springs");
   deleteBySweepInput = document.getElementById("delete-by-sweep");
@@ -45,6 +49,25 @@ function init() {
     header.onclick = () => {
       header.down = !header.down;
     }
+    if (header.attributes.drawMode) {
+      const button = document.createElement("input");
+      button.type = "radio";
+      button.style.width = "30px";
+      button.style.height = "30px";
+      button.style.position = "absolute";
+      button.style.left = "200px";
+      button.style.top = "0px";
+      button.buttonMode = header.attributes.drawMode.value;
+      header.appendChild(button);
+      if (typeof drawModeButtons === "undefined") {
+        drawModeButtons = [];
+      }
+      button.onclick = () => {
+        drawMode = button.buttonMode;
+        header.down = !header.down;
+      }
+      drawModeButtons.push(button);
+    }
   });
   physicsWorld = new PhysicsWorld();
   physicsExceptionOccurred = false;
@@ -57,6 +80,25 @@ function init() {
     const displayRect = displaySvg.getBoundingClientRect();
     mouseX = event.clientX - displayRect.left;
     mouseY = event.clientY - displayRect.top;
+    if (wallStart) {
+      if (wallTypeSelect.value == "line") {
+        wallDraft = Geometry.createSegment(wallStart, new Vector2(mouseX, mouseY));
+      }
+      else {
+        const topLeft = new Vector2(Math.min(wallStart.x, mouseX), Math.min(wallStart.y, mouseY));
+        const bottomRight = new Vector2(Math.max(wallStart.x, mouseX), Math.max(wallStart.y, mouseY));
+        if (wallTypeSelect.value == "rect") {
+          wallDraft = Geometry.createRect(topLeft, bottomRight);
+        }
+        if (wallTypeSelect.value == "oval") {
+          wallDraft = Geometry.createEllipse(topLeft, bottomRight);
+        }
+      }
+      if (wallElement) {
+        wallElement.remove();
+      }
+      wallElement = createSvgPolygon(wallDraft.points, null, true);
+    }
   });
   applyButton.addEventListener("click", (event) => {
     deltaTime = Number(deltaTimeInput.value);
@@ -84,34 +126,42 @@ function init() {
         body.destroy();
       }
     }
-  });
-  displaySvg.addEventListener("contextmenu", (event) => {
-    event.preventDefault();
-  });
-  displaySvg.addEventListener("mousedown", (event) => {
-    if (event.button == 1) {
-      event.preventDefault();
-      if (deleteBySweepInput.checked) {
-        sweeping = true;
+    wallStart = null;
+    wallDraft = null;
+    wallElement = null;
+    for (const collider of groundBody.colliders) {
+      if (collider.element) {
+        collider.element.remove();
+        collider.destroy();
       }
     }
   });
-  displaySvg.addEventListener("mouseup", (event) => {
-    if (event.button == 1) {
-      sweeping = false;
+  displaySvg.addEventListener("mousedown", (event) => {
+    if (drawMode == "4" && deleteBySweepInput.checked) {
+      sweeping = true;
     }
+    if (drawMode == "1") {
+      wallStart = new Vector2(mouseX, mouseY);
+    }
+  });
+  displaySvg.addEventListener("mouseup", (event) => {
+    sweeping = false;
   });
   displaySvg.addEventListener("mouseleave", (event) => {
     sweeping = false;
+    if (wallStart) {
+      onDisplayClicked(event);
+    }
   });
   setTimeout(() => {
-    const svgRect = displaySvg.getBoundingClientRect();
-    const width = svgRect.width;
-    const height = svgRect.height;
+    displaySize = Math.min(displaySvg.clientWidth, displaySvg.clientHeight);
+    displaySvg.style.width = displaySize + "px";
+    displaySvg.style.minHeight = displaySize + "px";
+    displaySvg.style.maxHeight = displaySize + "px";
     const corner1 = new Vector2(0, 0);
-    const corner2 = new Vector2(width, 0);
-    const corner3 = new Vector2(width, height);
-    const corner4 = new Vector2(0, height);
+    const corner2 = new Vector2(displaySize, 0);
+    const corner3 = new Vector2(displaySize, displaySize);
+    const corner4 = new Vector2(0, displaySize);
     groundBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
     groundBody.createCollider(Geometry.createSegment(corner1, corner2), 1);
     groundBody.createCollider(Geometry.createSegment(corner2, corner3), 1);
@@ -133,9 +183,14 @@ function init() {
   shapeList = [Geometry.createSquare(-100, 0, 100), new Circle(new Vector2(100, 0), 100)];
   draftPoints = [];
   form = null;
+  drawMode = "1";
   spawnRestitution = 0.2;
   spawnStaticFriction = 0.6;
   spawnDynamicFriction = 0.4;
+  spawnDensity = 1.0;
+  wallStart = null;
+  wallDraft = null;
+  wallElement = null;
   update();
   animate();
 }
@@ -161,6 +216,9 @@ function update() {
       }
     }
   });
+  for (const button of drawModeButtons) {
+    button.checked = button.buttonMode == drawMode;
+  }
   if (sweeping) {
     deleteObjects();
   }
@@ -179,11 +237,24 @@ function update() {
       }
     }
   }
+  for (const body of physicsWorld.bodies) {
+    body.updateWorldTransform();
+    let oob = true;
+    for (const collider of body.colliders) {
+      if (Geometry.collideShapes(collider.worldShape, Geometry.createSquare(displaySize / 2, displaySize / 2, displaySize / 2))) {
+        oob = false;
+      }
+    }
+    if (oob) {
+      for (const spring of body.springs) {
+        spring.element.remove();
+      }
+      body.element.remove();
+      body.destroy();
+    }
+  }
   if (paused) {
     lastUpdate = performance.now();
-    for (const body of physicsWorld.bodies) {
-      body.updateWorldTransform();
-    }
   }
   const time = performance.now();
   const maxDuration = 100;
@@ -268,12 +339,12 @@ function animate() {
       c.stroke();
     }
     if (drawCircle) {
-      polygonButton.style.background = "gray";
+      polygonButton.style.background = "white";
       circleButton.style.background = "lightgreen";
     }
     else {
       polygonButton.style.background = "lightgreen";
-      circleButton.style.background = "gray";
+      circleButton.style.background = "white";
     }
   }
   requestAnimationFrame(animate);
@@ -301,12 +372,12 @@ function createSvgCircle(shape, g) {
   return group;
 }
 
-function createSvgPolygon(points, g) {
+function createSvgPolygon(points, g, fill) {
   const group = g || document.createElementNS("http://www.w3.org/2000/svg", "g");
   const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
   const pointsString = points.map((point) => `${point.x},${point.y}`).join(" ");
   polygon.setAttribute("points", pointsString);
-  polygon.setAttribute("fill", "none");
+  polygon.setAttribute("fill", fill ? "black" : "none");
   polygon.setAttribute("stroke", "black");
   polygon.setAttribute("stroke-width", 2);
   group.appendChild(polygon);
@@ -322,45 +393,57 @@ function onDisplayClicked(event) {
   if (form) {
     return;
   }
-  if (event.button == 0) {
-    const shapeSize = Number(shapeSizeInput.value);
-    const shapeGap = Number(shapeGapInput.value);
-    const shapesInARow = Number(spawnColumnsInput.value);
-    const shapesToSpawn = shapesInARow * Number(spawnRowsInput.value);
-    for (let i = 0; i < shapesToSpawn; i++) {
-      const body = physicsWorld.createBody(PhysicsBodyType.DYNAMIC);
-      const x = mouseX + Math.floor(i % shapesInARow) * (shapeSize + shapeGap);
-      const y = mouseY + Math.floor(i / shapesInARow) * (shapeSize + shapeGap);
-      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      for (let shape of shapeList) {
-        shape = shape.clone();
-        if (shape.type == ShapeType.CIRCLE) {
-          shape.radius *= shapeSize / editSize;
-          shape.center.multiply(shapeSize / editSize);
-          createSvgCircle(shape, group);
-        }
-        if (shape.type == ShapeType.POLYGON) {
-          shape.radius *= shapeSize / editSize;
-          shape.points.forEach((point) => {
-            point.multiply(shapeSize / editSize)
-          });
-          createSvgPolygon(shape.points, group);
-        }
-        const collider = body.createCollider(shape, 1);
-        collider.restitution = spawnRestitution;
-        collider.staticFriction = spawnStaticFriction;
-        collider.dynamicFriction = spawnDynamicFriction;
+  switch (Number(drawMode)) {
+    case 1:
+      if (wallStart && wallDraft) {
+        const collider = groundBody.createCollider(wallDraft, 1);
+        collider.element = wallElement;
+        collider.restitution = Number(wallRestitutionInput.value);
+        collider.staticFriction = Number(wallFrictionInput.value);
+        collider.dynamicFriction = Number(wallFrictionInput.value);
       }
-      body.position.x = x;
-      body.position.y = y;
-      body.element = group;
-    }
-  }
-  else {
-    if (event.button == 1) {
-      deleteObjects();
-    }
-    else if (event.button == 2) {
+      wallStart = null;
+      wallDraft = null;
+      wallElement = null;
+      break;
+    case 2:
+      const shapeSize = Number(shapeSizeInput.value);
+      const shapeGap = Number(shapeGapInput.value);
+      const shapesInARow = Number(spawnColumnsInput.value);
+      const shapesToSpawn = shapesInARow * Number(spawnRowsInput.value);
+      for (let i = 0; i < shapesToSpawn; i++) {
+        const body = physicsWorld.createBody(PhysicsBodyType.DYNAMIC);
+        const x = mouseX + Math.floor(i % shapesInARow) * (shapeSize + shapeGap);
+        const y = mouseY + Math.floor(i / shapesInARow) * (shapeSize + shapeGap);
+        const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        for (let shape of shapeList) {
+          shape = shape.clone();
+          if (shape.type == ShapeType.CIRCLE) {
+            shape.radius *= shapeSize / editSize;
+            shape.center.multiply(shapeSize / editSize);
+            createSvgCircle(shape, group);
+          }
+          if (shape.type == ShapeType.POLYGON) {
+            shape.radius *= shapeSize / editSize;
+            shape.points.forEach((point) => {
+              point.multiply(shapeSize / editSize)
+            });
+            createSvgPolygon(shape.points, group);
+          }
+          const collider = body.createCollider(shape, spawnDensity);
+          collider.restitution = spawnRestitution;
+          collider.staticFriction = spawnStaticFriction;
+          collider.dynamicFriction = spawnDynamicFriction;
+        }
+        body.position.x = x;
+        body.position.y = y;
+        body.element = group;
+        for (const childre of group.children) {
+          childre.setAttribute("stroke", "red");
+        }
+      }
+      break;
+    case 3:
       const point = new Vector2(mouseX, mouseY);
       let clickedBody = null;
       for (const collider of physicsWorld.colliders) {
@@ -391,8 +474,11 @@ function onDisplayClicked(event) {
         springOriginOffset = Vector2.subtract(point, clickedBody.position);
         springOriginAngle = clickedBody.angle;
       }
-    }
-  } 
+      break;
+    case 4:
+      deleteObjects();
+      break;
+  }
 }
 
 function deleteObjects() {
@@ -400,11 +486,20 @@ function deleteObjects() {
     return;
   }
   const point = new Vector2(mouseX, mouseY);
+  let clickedCollider = null;
   let clickedBody = null;
   for (const collider of physicsWorld.colliders) {
-    if (collider.worldShape.testPoint(point)) {
+    if (collider.worldShape.testPoint(point, hitRadius)) {
+      clickedCollider = collider;
       clickedBody = collider.body;
     }
+  }
+  if (clickedBody == groundBody) {
+    if (deleteWallsInput.checked && clickedCollider.element) {
+      clickedCollider.element.remove();
+      clickedCollider.destroy();
+    }
+    clickedBody = null;
   }
   if (deleteBodiesInput.checked && clickedBody != null) {
     for (const spring of clickedBody.springs) {
@@ -467,12 +562,13 @@ function showShapeEdit() {
   formCanvas.height = editSize;
   formCanvas.style.width = "500px";
   formCanvas.style.height = "498px";
-  function addButton(left, bottom, text) {
+  function addButton(left, top, bottom, text) {
     const button = document.createElement("button");
     button.style.border = "1px solid black";
     button.style.position = "absolute";
     button.style.left = left;
-    button.style.top = bottom;
+    button.style.top ||= top;
+    button.style.bottom ||= bottom;
     button.style.width = "240px";
     button.style.height = "50px";
     button.style.fontSize = "30px";
@@ -500,10 +596,11 @@ function showShapeEdit() {
     options.appendChild(button);
     return button;
   }
-  function addLine(bottom) {
+  function addLine(top, bottom) {
     const underline = document.createElement("div");
     underline.style.position = "absolute";
-    underline.style.top = bottom;
+    underline.style.top ||= top;
+    underline.style.bottom ||= bottom;
     underline.style.width = "100%";
     underline.style.height = "1px";
     underline.style.background = "black";
@@ -527,21 +624,22 @@ function showShapeEdit() {
     container.appendChild(label);
     options.appendChild(container);
   }
-  const button = addButton("50%", "0px", "Done");
-  const cancel = addButton("0%", "0px", "Cancel");
-  const undo = addButton("50%", "55px", "Undo");
-  const clear = addButton("0%", "55px", "Clear");
-  polygonButton = addButton("0%", "116px", "Polygon");
-  circleButton = addButton("50%", "116px", "Circle");
-  addLine("115px");
-  addLine("176px");
-  addLabel("177px", "Restitution");
-  restitutionInput = addInput("177px", spawnRestitution);
-  addLabel("232px", "Static Friction");
-  staticFrictionInput = addInput("232px", spawnStaticFriction);
-  addLabel("287px", "Dynamic Friction");
-  dynamicFrictionInput = addInput("287px", spawnDynamicFriction);
-  addLine("347px");
+  const button = addButton("50%", null, "0px", "Done");
+  const cancel = addButton("0%", null, "0px", "Cancel");
+  const undo = addButton("50%", null, "55px", "Undo");
+  const clear = addButton("0%", null, "55px", "Clear");
+  polygonButton = addButton("0%", "0px", null, "Polygon");
+  circleButton = addButton("50%", "0px", null, "Circle");
+  addLine("60px", null);
+  addLabel("61px", "Restitution");
+  restitutionInput = addInput("61px", spawnRestitution);
+  addLabel("116px", "Static Friction");
+  staticFrictionInput = addInput("116px", spawnStaticFriction);
+  addLabel("171px", "Dynamic Friction");
+  dynamicFrictionInput = addInput("171px", spawnDynamicFriction);
+  addLabel("228px", "Density");
+  addLine(null, "115px");
+  densityInput = addInput("228px", spawnDensity);
   draftPoints.length = 0;
   polygonButton.onclick = () => {
     drawCircle = 0;
@@ -563,6 +661,7 @@ function showShapeEdit() {
     spawnRestitution = Number(restitutionInput.value);
     spawnStaticFriction = Number(staticFrictionInput.value);
     spawnDynamicFriction = Number(dynamicFrictionInput.value);
+    spawnDensity = Number(densityInput.value);
     onClose();
   }
   cancel.onclick = () => {

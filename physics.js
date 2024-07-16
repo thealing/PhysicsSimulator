@@ -136,9 +136,12 @@ class Polygon {
     return numer / denom - this.getCentroid().length();
   }
 
-  testPoint(point) {
+  testPoint(point, radius) {
+    if (radius == undefined) {
+      radius = 0;
+    }
     for (let i = this.points.length - 1, j = 0; j < this.points.length; i = j, j++) {
-      if (Vector2.cross(Vector2.subtract(this.points[j], this.points[i]), Vector2.subtract(point, this.points[i])) < 0) {
+      if (Vector2.cross(Vector2.subtract(this.points[j], this.points[i]), Vector2.subtract(point, this.points[i]).normalize()) < -radius) {
         return false;
       }
     }
@@ -569,6 +572,15 @@ class Geometry {
     return new Polygon([a, b]);
   }
 
+  static createRect(a, b) {
+    return new Polygon([
+      new Vector2(a.x, a.y), 
+      new Vector2(b.x, a.y), 
+      new Vector2(b.x, b.y), 
+      new Vector2(a.x, b.y)
+    ]);
+  }
+
   static createSquare(x, y, a) {
     return new Polygon([
       new Vector2(x - a, y - a), 
@@ -576,6 +588,21 @@ class Geometry {
       new Vector2(x + a, y + a), 
       new Vector2(x - a, y + a)
     ]);
+  }
+
+  static createEllipse(a, b) {
+    const cx = (a.x + b.x) / 2;
+    const cy = (a.y + b.y) / 2;
+    const rx = Math.abs(b.x - a.x) / 2;
+    const ry = Math.abs(b.y - a.y) / 2;
+    const points = [];
+    const da = Math.PI * 2 / 60;
+    for (let a = 0; a <= Math.PI * 2; a += da) {
+      const x = cx + rx * Math.cos(a);
+      const y = cy + ry * Math.sin(a);
+      points.push(new Vector2(x, y));
+    }
+    return new Polygon(points);
   }
 
   static projectOntoLine(a, b, p) {
