@@ -489,7 +489,7 @@ function deleteObjects() {
   let clickedCollider = null;
   let clickedBody = null;
   for (const collider of physicsWorld.colliders) {
-    if (collider.worldShape.testPoint(point, hitRadius)) {
+    if (collider.worldShape.testPoint(point, hitRadius) && (collider.body != groundBody || clickedCollider == null)) {
       clickedCollider = collider;
       clickedBody = collider.body;
     }

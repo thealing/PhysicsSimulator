@@ -123,6 +123,10 @@ input {
   filter: brightness(82%);
 }
 
+#toolbar input[type="radio"] {
+  filter: brightness(82%);
+}
+
 #toolbar #form-container {
   height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
   grid-template-columns: 120px 120px;
