@@ -323,8 +323,8 @@ class PhysicsWorld {
       body2.angularVelocity += Vector2.dot(collision.normal, tangent2) * collisionImpulse * body2.inverseAngularMass;
       const collisionTangent = collision.normal.clone().rotateRight();
       const tangentVelocity = Vector2.dot(collisionTangent, relativeVelocity);
-      const combinedStaticFriction = Math.sqrt(collider1.staticFriction, collider2.staticFriction);
-      const combinedDynamicFriction = Math.sqrt(collider1.dynamicFriction, collider2.dynamicFriction);
+      const combinedStaticFriction = Math.sqrt(collider1.staticFriction * collider2.staticFriction);
+      const combinedDynamicFriction = Math.sqrt(collider1.dynamicFriction * collider2.dynamicFriction);
       const tangentInverseMass1 = body1.inverseLinearMass + body1.inverseAngularMass * Vector2.dot(collisionTangent, tangent1) ** 2;
       const tangentInverseMass2 = body2.inverseLinearMass + body2.inverseAngularMass * Vector2.dot(collisionTangent, tangent2) ** 2;
       let frictionInpulse = -tangentVelocity * combinedStaticFriction / (tangentInverseMass1 + tangentInverseMass2);
@@ -518,9 +518,9 @@ class PhysicsCollider {
     this.nodeInBody = body.colliders.insertLast(this);
     this.nodeInWorld = body.world.colliders.insertLast(this);
     this.density = density;
-    this.restitution = 0.3;
-    this.staticFriction = 0.2;
-    this.dynamicFriction = 0.2;
+    this.restitution = 0.0;
+    this.staticFriction = 0.0;
+    this.dynamicFriction = 0.0;
     this.localShape = shape.clone();
     this.worldShape = shape.clone();
     this.worldBoundingRect = new Rect(new Vector2(0, 0), new Vector2(0, 0));

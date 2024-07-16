@@ -5,6 +5,9 @@ function init() {
   editSize = 500;
   bodyCountOutput = document.getElementById("body-count");
   colliderCountOutput = document.getElementById("collider-count");
+  rectTestCountOutput = document.getElementById("rect-test-count");
+  shapeTestCountOutput = document.getElementById("shape-test-count");
+  collisionCountOutput = document.getElementById("collision-count");
   stepDurationOutput = document.getElementById("step-duration");
   deltaTimeInput = document.getElementById("delta-time");
   gravityInput = document.getElementById("gravity");
@@ -114,6 +117,10 @@ function init() {
     groundBody.createCollider(Geometry.createSegment(corner2, corner3), 1);
     groundBody.createCollider(Geometry.createSegment(corner3, corner4), 1);
     groundBody.createCollider(Geometry.createSegment(corner4, corner1), 1);
+    for (const collider of groundBody.colliders) {
+      collider.staticFriction = 1;
+      collider.dynamicFriction = 1;
+    }
   }, 0);
   lastUpdate = performance.now();
   paused = false;
@@ -122,9 +129,13 @@ function init() {
   springOriginAngle = null;
   springMouse = createSvgLine();
   sweeping = false;
+  drawCircle = false;
   shapeList = [Geometry.createSquare(-100, 0, 100), new Circle(new Vector2(100, 0), 100)];
   draftPoints = [];
   form = null;
+  spawnRestitution = 0.2;
+  spawnStaticFriction = 0.6;
+  spawnDynamicFriction = 0.4;
   update();
   animate();
 }
@@ -183,6 +194,9 @@ function update() {
     physicsWorld.step(deltaTime / 1000.0);
     bodyCountOutput.value = physicsWorld.counters.bodies;
     colliderCountOutput.value = physicsWorld.counters.colliders;
+    collisionCountOutput.value = physicsWorld.counters.collisionsDetected;
+    rectTestCountOutput.value = physicsWorld.counters.boundingRectsTested;
+    shapeTestCountOutput.value = physicsWorld.counters.shapesTested;
     stepDurationOutput.value = physicsWorld.counters.stepDuration.toFixed(3);
   }
   setTimeout(update, 0);
@@ -268,7 +282,7 @@ function animate() {
 function createSvgLine() {
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
   line.setAttribute("stroke", "blue");
-  line.setAttribute("stroke-width", 3);
+  line.setAttribute("stroke-width", 2);
   displaySvg.appendChild(line);
   return line;
 }
@@ -279,9 +293,9 @@ function createSvgCircle(shape, g) {
   circle.setAttribute("cx", shape.center.x);
   circle.setAttribute("cy", shape.center.y);
   circle.setAttribute("r", shape.radius);
-  circle.setAttribute("fill", "red");
+  circle.setAttribute("fill", "none");
   circle.setAttribute("stroke", "black");
-  circle.setAttribute("stroke-width", 1);
+  circle.setAttribute("stroke-width", 2);
   group.appendChild(circle);
   displaySvg.appendChild(group);
   return group;
@@ -292,9 +306,9 @@ function createSvgPolygon(points, g) {
   const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
   const pointsString = points.map((point) => `${point.x},${point.y}`).join(" ");
   polygon.setAttribute("points", pointsString);
-  polygon.setAttribute("fill", "red");
+  polygon.setAttribute("fill", "none");
   polygon.setAttribute("stroke", "black");
-  polygon.setAttribute("stroke-width", 1);
+  polygon.setAttribute("stroke-width", 2);
   group.appendChild(polygon);
   displaySvg.appendChild(group);
   return group;
@@ -305,6 +319,9 @@ function setSvgPosition(element, x, y, angle) {
 }
 
 function onDisplayClicked(event) {
+  if (form) {
+    return;
+  }
   if (event.button == 0) {
     const shapeSize = Number(shapeSizeInput.value);
     const shapeGap = Number(shapeGapInput.value);
@@ -330,6 +347,9 @@ function onDisplayClicked(event) {
           createSvgPolygon(shape.points, group);
         }
         const collider = body.createCollider(shape, 1);
+        collider.restitution = spawnRestitution;
+        collider.staticFriction = spawnStaticFriction;
+        collider.dynamicFriction = spawnDynamicFriction;
       }
       body.position.x = x;
       body.position.y = y;
@@ -376,6 +396,9 @@ function onDisplayClicked(event) {
 }
 
 function deleteObjects() {
+  if (form) {
+    return;
+  }
   const point = new Vector2(mouseX, mouseY);
   let clickedBody = null;
   for (const collider of physicsWorld.colliders) {
@@ -409,56 +432,116 @@ function showShapeEdit() {
   document.body.appendChild(centered);
   centered.style.width = "100%";
   centered.style.height = "100%";
-  centered.style.margin = 0;
   centered.style.display = "flex";
   centered.style.justifyContent = "center";
   centered.style.alignItems = "center";
-  centered.style.background = "coral";
+  centered.style.flexDirection = "row";
+  const formGrid = document.createElement("div");
+  formGrid.style.display = "grid";
+  formGrid.style.gridTemplateColumns = "500px 500px";
+  formGrid.style.width = "1000px";
+  formGrid.style.height = "100%";
+  formGrid.style.alignItems = "center";
+  centered.appendChild(formGrid);
   form = document.createElement("div");
   form.style.background = "white";
   form.style.border = "1px solid black";
   form.style.position = "absolute";
   form.style.width = "500px";
-  form.style.height = "681px";
+  form.style.height = "500px";
   form.style.display = "flex";
   form.style.flexDirection = "column";
+  const options = document.createElement("div");
+  options.style.background = "white";
+  options.style.border = "1px solid black";
+  options.style.position = "absolute";
+  options.style.width = "500px";
+  options.style.height = "500px";
+  options.style.left = "50%";
+  options.style.display = "flex";
+  options.style.flexDirection = "column";
   formCanvas = document.createElement("canvas");
   formContext = formCanvas.getContext("2d");
   formCanvas.style.backgroundColor = "white";
   formCanvas.width = editSize;
   formCanvas.height = editSize;
-  formCanvas.style.width = "498px";
+  formCanvas.style.width = "500px";
   formCanvas.style.height = "498px";
-  formCanvas.style.borderBottom = "1px solid black";
   function addButton(left, bottom, text) {
     const button = document.createElement("button");
     button.style.border = "1px solid black";
     button.style.position = "absolute";
     button.style.left = left;
-    button.style.bottom = bottom;
-    button.style.width = "48%";
+    button.style.top = bottom;
+    button.style.width = "240px";
     button.style.height = "50px";
-    button.style.fontSize = "40px";
+    button.style.fontSize = "30px";
     button.style.fontFamily = "Arial";
     button.style.margin = "5px";
     button.innerHTML = text;
-    form.appendChild(button);
+    options.appendChild(button);
     return button;
   }
-  const button = addButton("50%", "0%", "Done");
-  const cancel = addButton("0%", "0%", "Cancel");
-  const undo = addButton("50%", "60px", "Undo");
-  const clear = addButton("0%", "60px", "Clear");
-  polygonButton = addButton("0%", "121px", "Polygon");
-  circleButton = addButton("50%", "121px", "Circle");
-  const underline = document.createElement("div");
-  underline.style.position = "absolute";
-  underline.style.bottom = "120px";
-  underline.style.width = "100%";
-  underline.style.height = "1px";
-  underline.style.background = "black";
-  form.appendChild(underline);
-  drawCircle = 0;
+  function addInput(bottom, value) {
+    const button = document.createElement("input");
+    button.type = "number";
+    button.value = value;
+    button.step = 0.1;
+    button.style.border = "1px solid black";
+    button.style.position = "absolute";
+    button.style.left = "50%";
+    button.style.top = bottom;
+    button.style.width = "240px";
+    button.style.height = "50px";
+    button.style.fontSize = "22px";
+    button.style.fontFamily = "Verdana";
+    button.style.margin = "5px";
+    button.style.background = "white";
+    options.appendChild(button);
+    return button;
+  }
+  function addLine(bottom) {
+    const underline = document.createElement("div");
+    underline.style.position = "absolute";
+    underline.style.top = bottom;
+    underline.style.width = "100%";
+    underline.style.height = "1px";
+    underline.style.background = "black";
+    options.appendChild(underline);
+  }
+  function addLabel(bottom, text) {
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.top = bottom;
+    container.style.width = "250px";
+    container.style.height = "60px";
+    container.style.display = "flex";
+    container.style.background = "white";
+    container.style.alignItems = "center";
+    container.style.justifyContent = "center";
+    const label = document.createElement("label");
+    label.style.fontSize = "26px";
+    label.style.fontFamily = "Verdana";
+    label.style.background = "white";
+    label.innerHTML = text;
+    container.appendChild(label);
+    options.appendChild(container);
+  }
+  const button = addButton("50%", "0px", "Done");
+  const cancel = addButton("0%", "0px", "Cancel");
+  const undo = addButton("50%", "55px", "Undo");
+  const clear = addButton("0%", "55px", "Clear");
+  polygonButton = addButton("0%", "116px", "Polygon");
+  circleButton = addButton("50%", "116px", "Circle");
+  addLine("115px");
+  addLine("176px");
+  addLabel("177px", "Restitution");
+  restitutionInput = addInput("177px", spawnRestitution);
+  addLabel("232px", "Static Friction");
+  staticFrictionInput = addInput("232px", spawnStaticFriction);
+  addLabel("287px", "Dynamic Friction");
+  dynamicFrictionInput = addInput("287px", spawnDynamicFriction);
+  addLine("347px");
   draftPoints.length = 0;
   polygonButton.onclick = () => {
     drawCircle = 0;
@@ -477,6 +560,9 @@ function showShapeEdit() {
     });
   };
   button.onclick = () => {
+    spawnRestitution = Number(restitutionInput.value);
+    spawnStaticFriction = Number(staticFrictionInput.value);
+    spawnDynamicFriction = Number(dynamicFrictionInput.value);
     onClose();
   }
   cancel.onclick = () => {
@@ -500,7 +586,8 @@ function showShapeEdit() {
     draftPoints.push(new Vector2(event.offsetX - editSize / 2, event.offsetY - editSize / 2));
   });
   form.appendChild(formCanvas);
-  centered.appendChild(form);
+  formGrid.appendChild(form);
+  formGrid.appendChild(options);
   paused = true;
   previousShapeList = Util.cloneArray(shapeList);
   previousShapeCount = previousShapeList.length;

@@ -44,8 +44,8 @@ body {
   position: absolute;
   width: var(--toolbar-width);
   height: calc(100% - var(--header-height));
-  min-height: 900px;
   right: 0;
+  bottom: 0;
   top: var(--header-height);
   padding: var(--padding);
   padding-left: 0;
@@ -101,7 +101,7 @@ button:active {
   font-size: 13px;
 }
 
-#toolbar .container input {
+input {
   padding-left: 3px;
 }
 

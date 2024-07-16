@@ -11,11 +11,17 @@
     <div class="container" id="title-container" style="--row-count: 1;" groupSize="1">
       <label>Simulation Info</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 3;">
+    <div class="container" id="form-container" style="--row-count: 6;">
       <label>Body Count</label>
       <input id="body-count" type="string" value="" readonly />
       <label>Collider Count</label>
       <input id="collider-count" type="string" value="" readonly />
+      <label>Rects Tested</label>
+      <input id="rect-test-count" type="string" value="" readonly />
+      <label>Shapes Tested</label>
+      <input id="shape-test-count" type="string" value="" readonly />
+      <label>Collisions</label>
+      <input id="collision-count" type="string" value="" readonly />
       <label>Step Duration</label>
       <input id="step-duration" type="string" value="" readonly />
     </div>
@@ -35,6 +41,20 @@
     </div>
     <div class="container" id="wide-container" style="--row-count: 1;">
       <button id="apply-button">Apply</button>
+    </div>
+    <div class="separator"></div>
+    <div class="container" id="title-container" style="--row-count: 1;" groupSize="1">
+      <label>Adding Walls</label>
+    </div>
+    <div class="container" id="form-container" style="--row-count: 4;">
+      <label>Type</label>
+      <input id="wall-type" type="text" value="??" />
+      <label>Restitution</label>
+      <input id="wall-restitution" type="number" value="3" />
+      <label>S. Friction</label>
+      <input id="wall-static-friction" type="number" value="100" />
+      <label>D. Friction</label>
+      <input id="wall-dynamic-friction" type="number" value="5" />
     </div>
     <div class="separator"></div>
     <div class="container" id="title-container" style="--row-count: 1;" groupSize="2">
