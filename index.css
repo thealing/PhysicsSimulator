@@ -69,10 +69,14 @@ body {
 }
 
 #toolbar #title-container * {
+  left: 40px;
   align-items: center;
-  justify-content: center;
+  justify-content: left;
   font-size: 18px;
   font-family: Arial, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 200px;
 }
 
 button:hover {
@@ -127,8 +131,9 @@ button:active {
 
 #toolbar #title-container {
   height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
-  grid-template-columns: 240px;
+  grid-template-columns: 200px;
   grid-row-gap: var(--padding);
+  align-items: center;
 }
 
 #toolbar #wide-container {

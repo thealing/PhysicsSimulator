@@ -24,6 +24,25 @@ function init() {
   deleteBodiesInput = document.getElementById("delete-bodies");
   deleteSpringsInput = document.getElementById("delete-springs");
   deleteBySweepInput = document.getElementById("delete-by-sweep");
+  toolbarHeaders = document.querySelectorAll("[id=\"title-container\"]");
+  toolbarHeaders.forEach((header) => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.width = "20px";
+    svg.style.height = "20px";
+    svg.style.border = "0";
+    svg.style.position = "absolute";
+    svg.style.left = "10px";
+    svg.style.top = "10px";
+    const arrow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    arrow.setAttribute("fill", "black");
+    svg.appendChild(arrow);
+    header.appendChild(svg);
+    header.down = false;
+    header.arrow = arrow;
+    header.onclick = () => {
+      header.down = !header.down;
+    }
+  });
   physicsWorld = new PhysicsWorld();
   physicsExceptionOccurred = false;
   displaySvg.addEventListener("mouseup", onDisplayClicked);
@@ -111,6 +130,26 @@ function init() {
 }
 
 function update() {
+  toolbarHeaders.forEach((header) => {
+    const count = header.attributes.groupsize.nodeValue;
+    let elem = header;
+    if (header.down) {
+      header.arrow.setAttribute("d", "M3,10 L10,0 L17,10 Z");
+      for (let i = 0; i < count; i++) {
+        elem = elem.nextElementSibling;
+        elem.style.display = "grid";
+        elem.style.height = "";
+      }
+    }
+    else {
+      header.arrow.setAttribute("d", "M3,0 L10,10 L17,0 Z");
+      for (let i = 0; i < count; i++) {
+        elem = elem.nextElementSibling;
+        elem.style.display = "none";
+        elem.style.height = "0px";
+      }
+    }
+  });
   if (sweeping) {
     deleteObjects();
   }
