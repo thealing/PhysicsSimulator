@@ -1,62 +1,62 @@
 * {
-	box-sizing: border-box;
-	margin: 0;
-	padding: 0;
-	border: none;
-	outline: none;
-	background: lightgray;
-	color: black;
-	accent-color: black;
-	font-family: Verdana, sans-serif;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: lightgray;
+  color: black;
+  accent-color: black;
+  font-family: Verdana, sans-serif;
 
-	--toolbar-width: 240px;
-	--header-height: 50px;
-	--control-height: 30px;
+  --toolbar-width: 240px;
+  --header-height: 50px;
+  --control-height: 30px;
   --wide-height: 40px;
-	--padding: 10px;
+  --padding: 10px;
 }
 
 html {
-	height: 100%;
+  height: 100%;
 }
 
 body {
-	position: relative;
-	width: 100%;
-	height: 100%;
-	min-width: 400px;
-	min-height: 400px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 400px;
+  min-height: 400px;
 }
 
 #header {
-	position: absolute;
-	width: 100%;
-	height: var(--header-height);
-	line-height: var(--header-height);
-	padding: var(--padding);
-	font-size: calc(var(--header-height) - 2 * var(--padding));
-	border-bottom: solid 1px black;
+  position: absolute;
+  width: 100%;
+  height: var(--header-height);
+  line-height: var(--header-height);
+  padding: var(--padding);
+  font-size: calc(var(--header-height) - 2 * var(--padding));
+  border-bottom: solid 1px black;
   display: flex;
-	align-items: center;
+  align-items: center;
 }
 
 #toolbar {
-	position: absolute;
-	width: var(--toolbar-width);
-	height: calc(100% - var(--header-height));
+  position: absolute;
+  width: var(--toolbar-width);
+  height: calc(100% - var(--header-height));
   min-height: 900px;
-	right: 0;
-	top: var(--header-height);
-	padding: var(--padding);
+  right: 0;
+  top: var(--header-height);
+  padding: var(--padding);
   padding-left: 0;
-	background: lightgray;
-	border-left: solid 1px black;
+  background: lightgray;
+  border-left: solid 1px black;
 }
 
 #toolbar * {
-	width: calc(100% - 2 * var(--padding));
-	height: var(--control-height);
-	border: solid 1px black;
+  width: calc(100% - 2 * var(--padding));
+  height: var(--control-height);
+  border: solid 1px black;
 }
 
 #toolbar input[readonly] {
@@ -75,35 +75,35 @@ body {
   font-family: Arial, sans-serif;
 }
 
-#toolbar button:hover {
-	background: darkgray;
+button:hover {
+  background: darkgray;
 }
 
-#toolbar button:active {
-	background: dimgray;
+button:active {
+  background: dimgray;
 }
 
 #toolbar .container {
   position: relative;
-	display: grid;
-	border: none;
+  display: grid;
+  border: none;
   margin-bottom: 10px;
 }
 
 #toolbar .container label {
-	display: flex;
-	align-items: center;
-	border: none;
+  display: flex;
+  align-items: center;
+  border: none;
   font-size: 13px;
 }
 
 #toolbar .container input {
-	padding-left: 3px;
+  padding-left: 3px;
 }
 
 #toolbar .container * {
   left: var(--padding);
-	position: relative;
+  position: relative;
 }
 
 #toolbar .separator {
@@ -116,49 +116,49 @@ body {
 }
 
 #toolbar input[type="checkbox"] {
-	filter: brightness(82%);
+  filter: brightness(82%);
 }
 
 #toolbar #form-container {
-	height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
-	grid-template-columns: 120px 120px;
+  height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
+  grid-template-columns: 120px 120px;
   grid-row-gap: var(--padding);
 }
 
 #toolbar #title-container {
-	height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
-	grid-template-columns: 240px;
+  height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
+  grid-template-columns: 240px;
   grid-row-gap: var(--padding);
 }
 
 #toolbar #wide-container {
-	height: calc(var(--row-count) * (var(--wide-height) + var(--padding)) - var(--padding));
-	grid-template-columns: 240px;
+  height: calc(var(--row-count) * (var(--wide-height) + var(--padding)) - var(--padding));
+  grid-template-columns: 240px;
   grid-row-gap: var(--padding);
 }
 
 #content {
-	position: absolute;
-	width: calc(100% - var(--toolbar-width));
-	height: calc(100% - var(--header-height));
-	top: var(--header-height);
-	padding: var(--padding);
-	background: lightgray;
+  position: absolute;
+  width: calc(100% - var(--toolbar-width));
+  height: calc(100% - var(--header-height));
+  top: var(--header-height);
+  padding: var(--padding);
+  background: lightgray;
 }
 
 #content * {
-	position: absolute;
-	padding: var(--padding);
-	border: solid 1px black;
+  position: absolute;
+  padding: var(--padding);
+  border: solid 1px black;
 }
 
 #content svg {
   padding: 0;
-	width: calc(100% - 2 * var(--padding));
-	max-height: calc(100% - 2 * var(--padding));
+  width: calc(100% - 2 * var(--padding));
+  max-height: calc(100% - 2 * var(--padding));
   aspect-ratio: 1 / 1;
 }
 
 #content svg text {
-	user-select: none;
+  user-select: none;
 }

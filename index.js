@@ -1,6 +1,7 @@
 init();
 
 function init() {
+  editSize = 500;
   bodyCountOutput = document.getElementById("body-count");
   colliderCountOutput = document.getElementById("collider-count");
   stepDurationOutput = document.getElementById("step-duration");
@@ -15,7 +16,8 @@ function init() {
   displaySvg = document.getElementById("display-svg");
   applyButton = document.getElementById("apply-button");
   pauseButton = document.getElementById("pause-button");
-  clearButton = document.getElementById("clear-button");
+  clearButton = document.getElementById("clear-button"); 
+  editButton = document.getElementById("edit-button"); 
   stifnessInput = document.getElementById("stifness");
   restingLengthInput = document.getElementById("resting-length");
   deleteBodiesInput = document.getElementById("delete-bodies");
@@ -28,7 +30,7 @@ function init() {
   physicsWorld.gravity.y = Number(gravityInput.value);
   correctionVelocityGain = Number(cvgInput.value);
   correctionTimeMin = Number(ctmInput.value);
-  document.addEventListener('mousemove', (event) => {
+  document.addEventListener("mousemove", (event) => {
     const displayRect = displaySvg.getBoundingClientRect();
     mouseX = event.clientX - displayRect.left;
     mouseY = event.clientY - displayRect.top;
@@ -39,6 +41,9 @@ function init() {
     correctionVelocityGain = Number(cvgInput.value);
     correctionTimeMin = Number(ctmInput.value);
     lastUpdate = performance.now();
+  });
+  editButton.addEventListener("click", (event) => {
+    showShapeEdit();
   });
   pauseButton.addEventListener("click", (event) => {
     paused = !paused;
@@ -57,10 +62,10 @@ function init() {
       }
     }
   });
-  displaySvg.addEventListener('contextmenu', (event) => {
+  displaySvg.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });
-  displaySvg.addEventListener('mousedown', (event) => {
+  displaySvg.addEventListener("mousedown", (event) => {
     if (event.button == 1) {
       event.preventDefault();
       if (deleteBySweepInput.checked) {
@@ -68,12 +73,12 @@ function init() {
       }
     }
   });
-  displaySvg.addEventListener('mouseup', (event) => {
+  displaySvg.addEventListener("mouseup", (event) => {
     if (event.button == 1) {
       sweeping = false;
     }
   });
-  displaySvg.addEventListener('mouseleave', (event) => {
+  displaySvg.addEventListener("mouseleave", (event) => {
     sweeping = false;
   });
   setTimeout(() => {
@@ -97,6 +102,8 @@ function init() {
   springOriginAngle = null;
   springMouse = createSvgLine();
   sweeping = false;
+  shapeToSpawn = [Geometry.createSquare(-100,0,100), new Circle(new Vector2(100, 0), 100)];
+  form = null;
   update();
   animate();
 }
@@ -150,42 +157,65 @@ function animate() {
   else {
     springMouse.setAttribute("visibility", "hidden");
   }
+  if (form) {
+    const c = formContext;
+    c.beginPath();
+    c.arc(editSize / 2, editSize / 2, 5, 0, 2 * Math.PI);
+    c.fillStyle = "orange";
+    c.fill();
+    for (const shape of shapeToSpawn) {
+      if (shape.type == ShapeType.CIRCLE) {
+        c.beginPath();
+        c.arc(editSize / 2 + shape.center.x, editSize / 2 + shape.center.y, shape.radius, 0, 2 * Math.PI);
+        c.strokeStyle = "purple";
+        c.stroke();
+      }
+      else if (shape.type == ShapeType.POLYGON) {
+        const points = shape.points;
+        c.beginPath();
+        c.moveTo(editSize / 2 + points[points.length-1].x, editSize / 2 + points[points.length-1].y);
+        for (let i = 0; i < points.length; i++) {
+            c.lineTo(editSize / 2 + points[i].x, editSize / 2 + points[i].y);
+        }
+        c.strokeStyle = "purple";
+        c.stroke();
+      }
+    }
+  }
   requestAnimationFrame(animate);
 }
 
 function createSvgLine() {
-	const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-	line.setAttribute("stroke", "blue");
-	line.setAttribute("stroke-width", 3);
-	displaySvg.appendChild(line);
-	return line;
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("stroke", "blue");
+  line.setAttribute("stroke-width", 3);
+  displaySvg.appendChild(line);
+  return line;
 }
 
-function createSvgCircle(radius) {
-	const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-	const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-	circle.setAttribute("cx", 0);
-	circle.setAttribute("cy", 0);
-	circle.setAttribute("r", radius);
-	circle.setAttribute("fill", "red");
-	circle.setAttribute("stroke", "black");
-	circle.setAttribute("stroke-width", 1);
-	group.appendChild(circle);
-	displaySvg.appendChild(group);
-	return group;
+function createSvgCircle(shape, g) {
+  const group = g || document.createElementNS("http://www.w3.org/2000/svg", "g");
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", shape.center.x);
+  circle.setAttribute("cy", shape.center.y);
+  circle.setAttribute("r", shape.radius);
+  circle.setAttribute("fill", "red");
+  circle.setAttribute("stroke", "black");
+  circle.setAttribute("stroke-width", 1);
+  group.appendChild(circle);
+  displaySvg.appendChild(group);
+  return group;
 }
 
-function createSvgSquare(radius) {
-  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  const square = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  square.setAttribute("x", -radius);
-  square.setAttribute("y", -radius);
-  square.setAttribute("width", radius * 2);
-  square.setAttribute("height", radius * 2);
-  square.setAttribute("fill", "red");
-  square.setAttribute("stroke", "black");
-  square.setAttribute("stroke-width", 1);
-  group.appendChild(square);
+function createSvgPolygon(points, g) {
+  const group = g || document.createElementNS("http://www.w3.org/2000/svg", "g");
+  const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+  const pointsString = points.map((point) => `${point.x},${point.y}`).join(" ");
+  polygon.setAttribute("points", pointsString);
+  polygon.setAttribute("fill", "red");
+  polygon.setAttribute("stroke", "black");
+  polygon.setAttribute("stroke-width", 1);
+  group.appendChild(polygon);
   displaySvg.appendChild(group);
   return group;
 }
@@ -201,21 +231,29 @@ function onDisplayClicked(event) {
     const shapesInARow = Number(spawnColumnsInput.value);
     const shapesToSpawn = shapesInARow * Number(spawnRowsInput.value);
     for (let i = 0; i < shapesToSpawn; i++) {
-      if (Math.random() < 0.5) {
-        var shape = new Circle(new Vector2(0, 0), shapeSize);
-        var svgElement = createSvgCircle(shapeSize);
-      }
-      else {
-        var shape = Geometry.createSquare(0, 0, shapeSize);
-        var svgElement = createSvgSquare(shapeSize);
-      }
       const body = physicsWorld.createBody(PhysicsBodyType.DYNAMIC);
-      const collider = body.createCollider(shape, 1);
-      const x = mouseX + Math.floor(i % shapesInARow) * (shapeSize * 2 + shapeGap);
-      const y = mouseY + Math.floor(i / shapesInARow) * (shapeSize * 2 + shapeGap);
+      const x = mouseX + Math.floor(i % shapesInARow) * (shapeSize + shapeGap);
+      const y = mouseY + Math.floor(i / shapesInARow) * (shapeSize + shapeGap);
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      for (let shape of shapeToSpawn) {
+        shape = shape.clone();
+        if (shape.type == ShapeType.CIRCLE) {
+          shape.radius *= shapeSize / editSize;
+          shape.center.multiply(shapeSize / editSize);
+          createSvgCircle(shape, group);
+        }
+        if (shape.type == ShapeType.POLYGON) {
+          shape.radius *= shapeSize / editSize;
+          shape.points.forEach((point) => {
+            point.multiply(shapeSize / editSize)
+          });
+          createSvgPolygon(shape.points, group);
+        }
+        const collider = body.createCollider(shape, 1);
+      }
       body.position.x = x;
       body.position.y = y;
-      body.element = svgElement;
+      body.element = group;
     }
   }
   else {
@@ -286,28 +324,74 @@ function deleteObjects() {
   }
 }
 
-function addRandomShapes() {
-  const shapeSize = 10;
-  const shapesToSpawn = 1700;
-  const shapeGap = 5;
-  const shapesInARow = Math.ceil(Math.sqrt(shapesToSpawn));
-  for (let i = 0; i < shapesToSpawn; i++) {
-    if (Math.random() < 0.5) {
-      var shape = new Circle(new Vector2(0, 0), shapeSize);
-      var svgElement = createSvgCircle(shapeSize);
-    }
-    else {
-      var shape = Geometry.createSquare(0, 0, shapeSize);
-      var svgElement = createSvgSquare(shapeSize);
-    }
-    const body = physicsWorld.createBody(PhysicsBodyType.DYNAMIC);
-    const collider = body.createCollider(shape, 1);
-    const x = 15 + Math.floor(i % shapesInARow) * (shapeSize * 2 + shapeGap);
-    const y = 15 + Math.floor(i / shapesInARow) * (shapeSize * 2 + shapeGap);
-    body.position.x = x;
-    body.position.y = y;
-    body.element = svgElement;
+function showShapeEdit() {
+  const centered = document.createElement("div");
+  document.body.appendChild(centered);
+  centered.style.width = "100%";
+  centered.style.height = "100%";
+  centered.style.margin = 0;
+  centered.style.display = "flex";
+  centered.style.justifyContent = "center";
+  centered.style.alignItems = "center";
+  centered.style.background = "coral";
+  form = document.createElement("div");
+  form.style.background = "white";
+  form.style.border = "1px solid black";
+  form.style.position = "absolute";
+  form.style.width = "500px";
+  form.style.height = "560px";
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+  formCanvas = document.createElement("canvas");
+  formContext = formCanvas.getContext("2d");
+  formCanvas.style.boxSizing  = "margin-box";
+  formCanvas.style.backgroundColor = "white";
+  formCanvas.width = editSize;
+  formCanvas.height = editSize;
+  formCanvas.style.width = "498px";
+  formCanvas.style.height = "498px";
+  const button = document.createElement("button");
+  button.style.border = "1px solid black";
+  button.style.position = "absolute";
+  button.style.left = "50%";
+  button.style.bottom = "0%";
+  button.style.width = "48%";
+  button.style.height = "50px";
+  button.style.fontSize = "40px";
+  button.style.margin = "5px";
+  button.innerHTML = "Done";
+  const cancel = document.createElement("button");
+  cancel.style.border = "1px solid black";
+  cancel.style.position = "absolute";
+  cancel.style.left = "0%";
+  cancel.style.bottom = "0%";
+  cancel.style.width = "48%";
+  cancel.style.height = "50px";
+  cancel.style.fontSize = "40px";
+  cancel.style.margin = "5px";
+  cancel.innerHTML = "Cancel";
+  const onClose = () => {
+    document.body.removeChild(centered);
+    paused = false;
+    form = null;
+    document.getElementById("toolbar").querySelectorAll("button, input").forEach((element) => {
+      element.disabled = false;
+    });
+  };
+  button.onclick = () => {
+    onClose();
   }
+  cancel.onclick = () => {
+    onClose();
+  }
+  form.appendChild(formCanvas);
+  form.appendChild(button);
+  form.appendChild(cancel);
+  centered.appendChild(form);
+  paused = true;
+  document.getElementById("toolbar").querySelectorAll("button, input").forEach((element) => {
+    element.disabled = true;
+  });
 }
 
 function distanceFromSegment(p, a, b) {
