@@ -64,11 +64,11 @@ class Polygon {
   }
 
   clone() {
-    return new Polygon(Util.cloneArray(this.points));
+    return new Polygon(this.points);
   }
 
   set(points) {
-    this.points = points;
+    this.points = Util.cloneArray(points);
     if (this.getLinearMassFactor() < 0) {
       this.points.reverse();
     }

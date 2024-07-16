@@ -1,6 +1,7 @@
 init();
 
 function init() {
+  hitRadius = 9;
   editSize = 500;
   bodyCountOutput = document.getElementById("body-count");
   colliderCountOutput = document.getElementById("collider-count");
@@ -29,7 +30,7 @@ function init() {
   deltaTime = Number(deltaTimeInput.value);
   physicsWorld.gravity.y = Number(gravityInput.value);
   correctionVelocityGain = Number(cvgInput.value);
-  correctionTimeMin = Number(ctmInput.value);
+  correctionTimeMin = Number(ctmInput.value) / 1000.0;
   document.addEventListener("mousemove", (event) => {
     const displayRect = displaySvg.getBoundingClientRect();
     mouseX = event.clientX - displayRect.left;
@@ -39,7 +40,7 @@ function init() {
     deltaTime = Number(deltaTimeInput.value);
     physicsWorld.gravity.y = Number(gravityInput.value);
     correctionVelocityGain = Number(cvgInput.value);
-    correctionTimeMin = Number(ctmInput.value);
+    correctionTimeMin = Number(ctmInput.value) / 1000.0;
     lastUpdate = performance.now();
   });
   editButton.addEventListener("click", (event) => {
@@ -102,7 +103,8 @@ function init() {
   springOriginAngle = null;
   springMouse = createSvgLine();
   sweeping = false;
-  shapeToSpawn = [Geometry.createSquare(-100,0,100), new Circle(new Vector2(100, 0), 100)];
+  shapeList = [Geometry.createSquare(-100, 0, 100), new Circle(new Vector2(100, 0), 100)];
+  draftPoints = [];
   form = null;
   update();
   animate();
@@ -111,6 +113,21 @@ function init() {
 function update() {
   if (sweeping) {
     deleteObjects();
+  }
+  if (form) {
+    if (drawCircle) {
+      if (draftPoints.length >= 2) {
+        shapeList.push(new Circle(draftPoints[0], Vector2.distance(draftPoints[0], draftPoints[1])));
+        draftPoints.length = 0;
+      }
+    }
+    else {
+      if (draftPoints.length >= 4 && Vector2.distance(draftPoints[0], draftPoints[draftPoints.length - 1]) < hitRadius) {
+        draftPoints.pop();
+        shapeList.push(new Polygon(draftPoints));
+        draftPoints.length = 0;
+      }
+    }
   }
   if (paused) {
     lastUpdate = performance.now();
@@ -159,11 +176,14 @@ function animate() {
   }
   if (form) {
     const c = formContext;
+    c.lineWidth = 3;
+    c.lineJoin = "round";
+    c.clearRect(0, 0, 500, 500);
     c.beginPath();
-    c.arc(editSize / 2, editSize / 2, 5, 0, 2 * Math.PI);
+    c.arc(editSize / 2, editSize / 2, 7, 0, 2 * Math.PI);
     c.fillStyle = "orange";
     c.fill();
-    for (const shape of shapeToSpawn) {
+    for (const shape of shapeList) {
       if (shape.type == ShapeType.CIRCLE) {
         c.beginPath();
         c.arc(editSize / 2 + shape.center.x, editSize / 2 + shape.center.y, shape.radius, 0, 2 * Math.PI);
@@ -173,13 +193,34 @@ function animate() {
       else if (shape.type == ShapeType.POLYGON) {
         const points = shape.points;
         c.beginPath();
-        c.moveTo(editSize / 2 + points[points.length-1].x, editSize / 2 + points[points.length-1].y);
+        c.moveTo(editSize / 2 + points[points.length-1].x, editSize / 2 + points[points.length - 1].y);
         for (let i = 0; i < points.length; i++) {
             c.lineTo(editSize / 2 + points[i].x, editSize / 2 + points[i].y);
         }
         c.strokeStyle = "purple";
         c.stroke();
       }
+    }
+    if (draftPoints.length >= 1) {
+      c.beginPath();
+      c.arc(editSize / 2 + draftPoints[0].x, editSize / 2 + draftPoints[0].y, 2, 0, 2 * Math.PI);
+      c.fillStyle = "red";
+      c.fill();
+      c.beginPath();
+      c.moveTo(editSize / 2 + draftPoints[0].x, editSize / 2 + draftPoints[0].y);
+      for (let i = 1; i < draftPoints.length; i++) {
+        c.lineTo(editSize / 2 + draftPoints[i].x, editSize / 2 + draftPoints[i].y);
+      }
+      c.strokeStyle = "red";
+      c.stroke();
+    }
+    if (drawCircle) {
+      polygonButton.style.background = "gray";
+      circleButton.style.background = "lightgreen";
+    }
+    else {
+      polygonButton.style.background = "lightgreen";
+      circleButton.style.background = "gray";
     }
   }
   requestAnimationFrame(animate);
@@ -235,7 +276,7 @@ function onDisplayClicked(event) {
       const x = mouseX + Math.floor(i % shapesInARow) * (shapeSize + shapeGap);
       const y = mouseY + Math.floor(i / shapesInARow) * (shapeSize + shapeGap);
       const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      for (let shape of shapeToSpawn) {
+      for (let shape of shapeList) {
         shape = shape.clone();
         if (shape.type == ShapeType.CIRCLE) {
           shape.radius *= shapeSize / editSize;
@@ -313,7 +354,7 @@ function deleteObjects() {
   if (deleteSpringsInput.checked) {
     let clickedString = null;
     for (const string of physicsWorld.springs) {
-      if (distanceFromSegment(point, string.worldAnchor1, string.worldAnchor2) < 5) {
+      if (distanceFromSegment(point, string.worldAnchor1, string.worldAnchor2) < hitRadius) {
         clickedString = string;
       }
     }
@@ -339,37 +380,55 @@ function showShapeEdit() {
   form.style.border = "1px solid black";
   form.style.position = "absolute";
   form.style.width = "500px";
-  form.style.height = "560px";
+  form.style.height = "681px";
   form.style.display = "flex";
   form.style.flexDirection = "column";
   formCanvas = document.createElement("canvas");
   formContext = formCanvas.getContext("2d");
-  formCanvas.style.boxSizing  = "margin-box";
   formCanvas.style.backgroundColor = "white";
   formCanvas.width = editSize;
   formCanvas.height = editSize;
   formCanvas.style.width = "498px";
   formCanvas.style.height = "498px";
-  const button = document.createElement("button");
-  button.style.border = "1px solid black";
-  button.style.position = "absolute";
-  button.style.left = "50%";
-  button.style.bottom = "0%";
-  button.style.width = "48%";
-  button.style.height = "50px";
-  button.style.fontSize = "40px";
-  button.style.margin = "5px";
-  button.innerHTML = "Done";
-  const cancel = document.createElement("button");
-  cancel.style.border = "1px solid black";
-  cancel.style.position = "absolute";
-  cancel.style.left = "0%";
-  cancel.style.bottom = "0%";
-  cancel.style.width = "48%";
-  cancel.style.height = "50px";
-  cancel.style.fontSize = "40px";
-  cancel.style.margin = "5px";
-  cancel.innerHTML = "Cancel";
+  formCanvas.style.borderBottom = "1px solid black";
+  function addButton(left, bottom, text) {
+    const button = document.createElement("button");
+    button.style.border = "1px solid black";
+    button.style.position = "absolute";
+    button.style.left = left;
+    button.style.bottom = bottom;
+    button.style.width = "48%";
+    button.style.height = "50px";
+    button.style.fontSize = "40px";
+    button.style.fontFamily = "Arial";
+    button.style.margin = "5px";
+    button.innerHTML = text;
+    form.appendChild(button);
+    return button;
+  }
+  const button = addButton("50%", "0%", "Done");
+  const cancel = addButton("0%", "0%", "Cancel");
+  const undo = addButton("50%", "60px", "Undo");
+  const clear = addButton("0%", "60px", "Clear");
+  polygonButton = addButton("0%", "121px", "Polygon");
+  circleButton = addButton("50%", "121px", "Circle");
+  const underline = document.createElement("div");
+  underline.style.position = "absolute";
+  underline.style.bottom = "120px";
+  underline.style.width = "100%";
+  underline.style.height = "1px";
+  underline.style.background = "black";
+  form.appendChild(underline);
+  drawCircle = 0;
+  draftPoints.length = 0;
+  polygonButton.onclick = () => {
+    drawCircle = 0;
+    draftPoints.length = 0;
+  }
+  circleButton.onclick = () => {
+    drawCircle = 1;
+    draftPoints.length = 0;
+  }
   const onClose = () => {
     document.body.removeChild(centered);
     paused = false;
@@ -382,13 +441,30 @@ function showShapeEdit() {
     onClose();
   }
   cancel.onclick = () => {
+    shapeList = previousShapeList;
     onClose();
+  } 
+  clear.onclick = () => {
+    shapeList.length = 0;
+    previousShapeCount = 0;
+    draftPoints.length = 0;
   }
+  undo.onclick = () => {
+    if (draftPoints.length == 0) {
+      shapeList.length > previousShapeCount && shapeList.length--;
+    }
+    else {
+      draftPoints.length > 0 && draftPoints.length--;
+    }
+  }
+  formCanvas.addEventListener("mouseup", (event) => {
+    draftPoints.push(new Vector2(event.offsetX - editSize / 2, event.offsetY - editSize / 2));
+  });
   form.appendChild(formCanvas);
-  form.appendChild(button);
-  form.appendChild(cancel);
   centered.appendChild(form);
   paused = true;
+  previousShapeList = Util.cloneArray(shapeList);
+  previousShapeCount = previousShapeList.length;
   document.getElementById("toolbar").querySelectorAll("button, input").forEach((element) => {
     element.disabled = true;
   });
