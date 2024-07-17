@@ -183,7 +183,7 @@ function init() {
   shapeList = [Geometry.createSquare(-100, 0, 100), new Circle(new Vector2(100, 0), 100)];
   draftPoints = [];
   form = null;
-  drawMode = "1";
+  drawMode = "2";
   spawnRestitution = 0.2;
   spawnStaticFriction = 0.6;
   spawnDynamicFriction = 0.4;
@@ -305,8 +305,15 @@ function animate() {
     c.clearRect(0, 0, 500, 500);
     c.beginPath();
     c.arc(editSize / 2, editSize / 2, 7, 0, 2 * Math.PI);
-    c.fillStyle = "orange";
+    c.fillStyle = "black";
     c.fill();
+    if (shapeList.length > 0) {
+      const centroid = getCentroid(shapeList);
+      c.beginPath();
+      c.arc(editSize / 2 + centroid.x, editSize / 2 + centroid.y, 7, 0, 2 * Math.PI);
+      c.fillStyle = "orange";
+      c.fill();
+    }
     for (const shape of shapeList) {
       if (shape.type == ShapeType.CIRCLE) {
         c.beginPath();
@@ -457,7 +464,7 @@ function onDisplayClicked(event) {
       }
       if (springOriginBody) {
         const springOrigin = springOriginOffset.clone().rotate(springOriginBody.angle - springOriginAngle).add(springOriginBody.position);
-        const spring = new PhysicsSpring(springOriginBody, springOrigin, clickedBody, point);
+        const spring = physicsWorld.createSpring(springOriginBody, springOrigin, clickedBody, point);
         spring.stiffness = Number(stifnessInput.value);
         const restingLength = Number(restingLengthInput.value);
         if (restingLength >= 0) {
@@ -628,6 +635,7 @@ function showShapeEdit() {
   const cancel = addButton("0%", null, "0px", "Cancel");
   const undo = addButton("50%", null, "55px", "Undo");
   const clear = addButton("0%", null, "55px", "Clear");
+  const alignCentroid = addButton("25%", null, "116px", "Align Centroid");
   polygonButton = addButton("0%", "0px", null, "Polygon");
   circleButton = addButton("50%", "0px", null, "Circle");
   addLine("60px", null);
@@ -681,6 +689,21 @@ function showShapeEdit() {
       draftPoints.length > 0 && draftPoints.length--;
     }
   }
+  alignCentroid.onclick = () => {
+    const centroid = getCentroid(shapeList);
+    for (const shape of shapeList) {
+      switch (shape.type) {
+        case ShapeType.CIRCLE:
+          shape.center.subtract(centroid);
+          break;
+        case ShapeType.POLYGON:
+          for (const point of shape.points) {
+            point.subtract(centroid);
+          }
+          break;
+      }
+    }
+  };
   formCanvas.addEventListener("mouseup", (event) => {
     draftPoints.push(new Vector2(event.offsetX - editSize / 2, event.offsetY - editSize / 2));
   });
@@ -693,6 +716,15 @@ function showShapeEdit() {
   document.getElementById("toolbar").querySelectorAll("button, input").forEach((element) => {
     element.disabled = true;
   });
+}
+
+function getCentroid(shapes) {
+  const world = new PhysicsWorld();
+  const body = world.createBody(PhysicsBodyType.DYNAMIC);
+  for (const shape of shapes) {
+    body.createCollider(shape, 1);
+  }
+  return body.centerOfMass;
 }
 
 function distanceFromSegment(p, a, b) {
