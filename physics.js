@@ -107,7 +107,7 @@ class Polygon {
       const a = this.points[i];
       const b = this.points[j];
       const d = Vector2.distance(a, b);
-      centroid.add(Vector2.add(a, b).multiply(d));
+      centroid.add(Vector2.add(a, b).multiply(d / 2));
       weight += d;
     }
     return centroid.divide(weight);
@@ -232,6 +232,10 @@ class PhysicsWorld {
     return new PhysicsBody(this, type);
   }
 
+  createSpring(body1, anchor1, body2, anchor2) {
+    return new PhysicsSpring(this, body1, anchor1, body2, anchor2);
+  }
+
   step(deltaTime) {
     this.counters.reset();
     this.counters.bodies = this.bodies.size;
@@ -242,14 +246,19 @@ class PhysicsWorld {
       body.updateWorldTransform();
     }
     for (const body of this.bodies) {
-      if (body.type == PhysicsBodyType.STATIC) {
-        body.linearVelocity.set(0, 0);
-        body.angularVelocity = 0;
-        continue;
+      switch (body.type) {
+        case PhysicsBodyType.DYNAMIC:
+          body.linearVelocity.addScaled(this.gravity, deltaTime);
+          body.linearVelocity.addScaled(body.linearForce, body.inverseLinearMass * deltaTime);
+          body.angularVelocity += body.angularForce * body.inverseAngularMass * deltaTime;
+          break;
+        case PhysicsBodyType.STATIC:
+          body.linearVelocity.set(0, 0);
+          body.angularVelocity = 0;
+          break;
       }
-      body.linearVelocity.addScaled(this.gravity, deltaTime);
-      body.linearVelocity.addScaled(body.linearForce, body.inverseLinearMass * deltaTime);
-      body.angularVelocity += body.angularForce * body.inverseAngularMass * deltaTime;
+      body.linearVelocityCorrection.set(0, 0);
+      body.angularVelocityCorrection = 0;
     }
     for (const spring of physicsWorld.springs) {
       const vector = Vector2.subtract(spring.worldAnchor2, spring.worldAnchor1);
@@ -326,8 +335,8 @@ class PhysicsWorld {
       body2.angularVelocity += Vector2.dot(collision.normal, tangent2) * collisionImpulse * body2.inverseAngularMass;
       const collisionTangent = collision.normal.clone().rotateRight();
       const tangentVelocity = Vector2.dot(collisionTangent, relativeVelocity);
-      const combinedStaticFriction = Math.sqrt(collider1.staticFriction * collider2.staticFriction);
-      const combinedDynamicFriction = Math.sqrt(collider1.dynamicFriction * collider2.dynamicFriction);
+      const combinedStaticFriction = collider1.staticFriction * collider2.staticFriction;
+      const combinedDynamicFriction = collider1.dynamicFriction * collider2.dynamicFriction;
       const tangentInverseMass1 = body1.inverseLinearMass + body1.inverseAngularMass * Vector2.dot(collisionTangent, tangent1) ** 2;
       const tangentInverseMass2 = body2.inverseLinearMass + body2.inverseAngularMass * Vector2.dot(collisionTangent, tangent2) ** 2;
       let frictionInpulse = -tangentVelocity * combinedStaticFriction / (tangentInverseMass1 + tangentInverseMass2);
@@ -364,12 +373,8 @@ class PhysicsWorld {
       }
       body.position.add(Vector2.add(body.linearVelocity, body.linearVelocityCorrection).multiply(deltaTime));
       body.angle += (body.angularVelocity + body.angularVelocityCorrection) * deltaTime;
-      const linearVelocityChange = Vector2.multiply(body.linearVelocityCorrection, Physics.correctionVelocityGain);
-      const angularVelocityChange = body.angularVelocityCorrection * Physics.correctionVelocityGain;
-      body.linearVelocity.add(linearVelocityChange);
-      body.angularVelocity += angularVelocityChange;
-      body.linearVelocityCorrection.multiply(0);
-      body.angularVelocityCorrection *= 0;
+      body.linearVelocity.add(Vector2.multiply(body.linearVelocityCorrection, Physics.correctionVelocityGain));
+      body.angularVelocity += body.angularVelocityCorrection * Physics.correctionVelocityGain;
       body.worldTransformIsDirty = true;
       body.updateWorldTransform();
     }
@@ -383,8 +388,7 @@ class PhysicsBody {
     this.world = world;
     this.nodeInWorld = world.bodies.insertLast(this);
     this.type = type;
-    this.localCenterOfMass = new Vector2(0, 0);
-    this.worldCenterOfMass = new Vector2(0, 0);
+    this.centerOfMass = new Vector2(0, 0);
     this.inverseLinearMass = 0;
     this.inverseAngularMass = 0;
     this.position = new Vector2(0, 0);
@@ -462,7 +466,6 @@ class PhysicsBody {
       return;
     }
     const transform = this.getTransform();
-    this.worldCenterOfMass.transformOf(this.localCenterOfMass, transform);
     for (const collider of this.colliders) {
       collider.worldShape.transformOf(collider.localShape, transform);
       collider.worldShape.getBoundingRect(collider.worldBoundingRect);
@@ -482,7 +485,7 @@ class PhysicsBody {
     if (this.type == PhysicsBodyType.STATIC) {
       return;
     }
-    const bodyCenterOfMass = this.localCenterOfMass.clone();
+    const bodyCenterOfMass = this.centerOfMass.clone();
     const bodyLinearMass = this.inverseLinearMass == 0 ? 0 : 1 / this.inverseLinearMass;
     const bodyAngularMass = this.inverseAngularMass == 0 ? 0 : 1 / this.inverseAngularMass;
     const colliderCenterOfMass = collider.localShape.getCentroid();
@@ -491,7 +494,7 @@ class PhysicsBody {
     const newCenterOfMass = Vector2.multiply(bodyCenterOfMass, bodyLinearMass).addScaled(colliderCenterOfMass, colliderLinearMass).divide(bodyLinearMass + colliderLinearMass);
     const newLinearMass = bodyLinearMass + colliderLinearMass;
     const newAngularMass = bodyAngularMass + bodyLinearMass * Vector2.distanceSquared(bodyCenterOfMass, newCenterOfMass) + colliderAngularMass + colliderLinearMass * Vector2.distanceSquared(colliderCenterOfMass, newCenterOfMass);
-    this.localCenterOfMass = newCenterOfMass;
+    this.centerOfMass = newCenterOfMass;
     this.inverseLinearMass = newLinearMass == 0 ? 0 : 1 / newLinearMass;
     this.inverseAngularMass = newAngularMass == 0 ? 0 : 1 / newAngularMass;
   }
@@ -500,7 +503,7 @@ class PhysicsBody {
     if (this.type == PhysicsBodyType.STATIC) {
       return;
     }
-    const bodyCenterOfMass = this.localCenterOfMass.clone();
+    const bodyCenterOfMass = this.centerOfMass.clone();
     const bodyLinearMass = this.inverseLinearMass == 0 ? 0 : 1 / this.inverseLinearMass;
     const bodyAngularMass = this.inverseAngularMass == 0 ? 0 : 1 / this.inverseAngularMass;
     const colliderCenterOfMass = collider.localShape.getCentroid();
@@ -509,7 +512,7 @@ class PhysicsBody {
     const newCenterOfMass = Vector2.multiply(bodyCenterOfMass, bodyLinearMass).subtractScaled(colliderCenterOfMass, colliderLinearMass).divide(bodyLinearMass - colliderLinearMass);
     const newLinearMass = bodyLinearMass - colliderLinearMass;
     const newAngularMass = bodyAngularMass + bodyLinearMass * Vector2.distanceSquared(bodyCenterOfMass, newCenterOfMass) - colliderAngularMass - colliderLinearMass * Vector2.distanceSquared(colliderCenterOfMass, newCenterOfMass);
-    this.localCenterOfMass = newCenterOfMass;
+    this.centerOfMass = newCenterOfMass;
     this.inverseLinearMass = newLinearMass == 0 ? 0 : 1 / newLinearMass;
     this.inverseAngularMass = newAngularMass == 0 ? 0 : 1 / newAngularMass;
   }
@@ -546,18 +549,18 @@ class PhysicsCollider {
 }
 
 class PhysicsSpring {
-  constructor(body1, anchor1, body2, anchor2) {
+  constructor(world, body1, anchor1, body2, anchor2) {
     this.body1 = body1;
     this.body2 = body2;
     this.worldAnchor1 = anchor1;
     this.worldAnchor2 = anchor2;
-    this.localAnchor1 = new Vector2().transformOf(anchor1, body1.getInverseTransform());
-    this.localAnchor2 = new Vector2().transformOf(anchor2, body2.getInverseTransform());
+    this.localAnchor1 = Vector2.transform(anchor1, body1.getInverseTransform());
+    this.localAnchor2 = Vector2.transform(anchor2, body2.getInverseTransform());
     this.stiffness = 0;
     this.restingLength = Vector2.distance(anchor1, anchor2);
     this.nodeInBody1 = body1.springs.insertLast(this);
     this.nodeInBody2 = body2.springs.insertLast(this);
-    this.nodeInWorld = body1.world.springs.insertLast(this);
+    this.nodeInWorld = world.springs.insertLast(this);
   }
 
   destroy() {

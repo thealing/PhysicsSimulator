@@ -132,6 +132,16 @@ class Vector2 {
   static middle(v, w) {
     return new Vector2((v.x + w.x) / 2, (v.y + w.y) / 2);
   }
+
+  static rotate(v, a) {
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    return new Vector2(c * v.x - s * v.y, s * v.x + c * v.y);
+  }
+
+  static transform(v, t) {
+    return new Vector2(t.c * v.x - t.s * v.y + t.x, t.s * v.x + t.c * v.y + t.y);
+  }
   
   static distance(v, w) {
     return Math.sqrt(Vector2.distanceSquared(v, w));
