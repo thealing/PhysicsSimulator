@@ -16,8 +16,8 @@ Hosted at: https://themolish.netlify.app
   - Types
     - Dynamic: moves and rotates
     - Static: cannot move or rotate
-  - Position
-  - Velocity
+  - Dynamic position
+  - Dynamic velocity
   - Force can be applied
   - Impulses can be applied
   - Mass automatically calculated from colliders
@@ -37,6 +37,6 @@ Hosted at: https://themolish.netlify.app
     - Coulomb's law
   - Stability achieved by the usage of correction velocities
 - Code
-  - Less than 1000 lines
-  - Easy to use and understand
-  - Entire physics step in one function (150 lines)
+  - Simplicity was a main priority
+  - The engine is less than 1000 loc
+  - The entire physics step is only 150 loc
