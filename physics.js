@@ -1,12 +1,13 @@
-class ShapeType {
-  static CIRCLE = 0;
-  static POLYGON = 1;
-  static COUNT = 2;
+const ShapeType = {
+  CIRCLE: 0,
+  POLYGON: 1,
+  COUNT: 2
 };
 
-class PhysicsBodyType {
-  static DYNAMIC = 0;
-  static STATIC = 1;
+const PhysicsBodyType = {
+  DYNAMIC: 0,
+  STATIC: 1,
+  COUNT: 2
 };
 
 class Circle {
@@ -789,11 +790,11 @@ class Geometry {
 }
 
 class Physics {
-  static correctionVelocityGain = 0.1;
-  static correctionTimeMin = 0.01;
-
   static collide(collider1, collider2) {
     const collision = Geometry.collideShapes(collider1.worldShape, collider2.worldShape);
     return collision == null ? null : {collider1, collider2, collision};
   }
 }
+
+Physics.correctionVelocityGain = 0.1;
+Physics.correctionTimeMin = 0.01;
