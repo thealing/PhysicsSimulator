@@ -69,6 +69,7 @@ function init() {
       drawModeButtons.push(button);
     }
   });
+  window.addEventListener("resize", resizeForm);
   physicsWorld = new PhysicsWorld();
   physicsExceptionOccurred = false;
   displaySvg.addEventListener("mouseup", onDisplayClicked);
@@ -174,6 +175,19 @@ function init() {
   wallElement = null;
   update();
   animate();
+}
+
+function resizeForm() {
+  const maxWidth = window.innerWidth;
+  const baseWidth = 1000;
+  const maxHeight = window.innerHeight;
+  const baseHeight = 500;
+  const scale = Math.min(1, Math.min(maxHeight / baseHeight, maxWidth / baseWidth) * 0.9);
+  if (typeof formGrid != "undefined" && formGrid != null) {
+    formGrid.style.width = baseWidth * scale + "px";
+    formGrid.style.height = baseHeight * scale + "px";
+    formGrid.style.fontSize = 25 * scale + "px";
+  }
 }
 
 function createWalls() {
@@ -555,56 +569,39 @@ function showShapeEdit() {
   document.body.appendChild(centered);
   centered.style.background = "none";
   centered.style.position = "absolute";
+  centered.style.display = "flex";
+  centered.style.top = "0";
+  centered.style.left = "0";
   centered.style.width = "100%";
   centered.style.height = "100%";
-  centered.style.display = "flex";
   centered.style.justifyContent = "center";
   centered.style.alignItems = "center";
-  centered.style.flexDirection = "row";
-  const formGrid = document.createElement("div");
+  formGrid = document.createElement("div");
+  formGrid.style.position = "relative";
   formGrid.style.display = "grid";
-  formGrid.style.gridTemplateColumns = "500px 500px";
-  formGrid.style.width = "1000px";
-  formGrid.style.height = "100%";
-  formGrid.style.alignItems = "center";
+  formGrid.style.gridTemplateColumns = "1fr 1fr";
+  formGrid.style.background = "none";
   centered.appendChild(formGrid);
-  function resizeForm() {
-    const maxWidth = window.innerWidth;
-    const baseWidth = 1000;
-    const maxHeight = window.innerHeight;
-    const baseHeight = 500;
-    const scale = Math.min(1, Math.min(maxHeight / baseHeight, maxWidth / baseWidth) * 0.9);
-    formGrid.style.transform = `scale(${scale})`;
-    formGrid.style.transformOrigin = "middle center";
-    formGrid.style.width = `${baseWidth}px`;
-    formGrid.style.height = `${baseHeight}px`;
-  }
-  resizeForm();
-  window.addEventListener("resize", resizeForm);
   form = document.createElement("div");
   form.style.background = "white";
   form.style.border = "1px solid black";
-  form.style.position = "absolute";
-  form.style.width = "500px";
-  form.style.height = "500px";
   form.style.display = "flex";
   form.style.flexDirection = "column";
+  form.style.borderRight = "none";
+  form.style.position = "relative";
   const options = document.createElement("div");
   options.style.background = "white";
   options.style.border = "1px solid black";
-  options.style.position = "absolute";
-  options.style.width = "500px";
-  options.style.height = "500px";
-  options.style.left = "50%";
   options.style.display = "flex";
   options.style.flexDirection = "column";
+  options.style.position = "relative";
   formCanvas = document.createElement("canvas");
   formContext = formCanvas.getContext("2d");
   formCanvas.style.backgroundColor = "white";
   formCanvas.width = editSize;
   formCanvas.height = editSize;
-  formCanvas.style.width = "500px";
-  formCanvas.style.height = "498px";
+  formCanvas.style.width = "100%";
+  formCanvas.style.height = "100%";
   function addButton(left, top, bottom, text) {
     const button = document.createElement("button");
     button.style.border = "1px solid black";
@@ -616,11 +613,10 @@ function showShapeEdit() {
     if (!button.style.bottom) {
       button.style.bottom = bottom;
     }
-    button.style.width = "240px";
-    button.style.height = "50px";
-    button.style.fontSize = "30px";
+    button.style.width = "48.5%";
+    button.style.height = "10%";
     button.style.fontFamily = "Arial";
-    button.style.margin = "5px";
+    button.style.fontSize = "inherit";
     button.innerHTML = text;
     options.appendChild(button);
     return button;
@@ -630,15 +626,15 @@ function showShapeEdit() {
     button.type = "number";
     button.value = value;
     button.step = 0.1;
+    button.style.paddingLeft = "1%";
     button.style.border = "1px solid black";
     button.style.position = "absolute";
-    button.style.left = "50%";
+    button.style.left = "50.5%";
     button.style.top = bottom;
-    button.style.width = "240px";
-    button.style.height = "50px";
-    button.style.fontSize = "22px";
+    button.style.width = "48.5%";
+    button.style.height = "10%";
     button.style.fontFamily = "Verdana";
-    button.style.margin = "5px";
+    button.style.fontSize = "inherit";
     button.style.background = "white";
     options.appendChild(button);
     return button;
@@ -661,37 +657,38 @@ function showShapeEdit() {
     const container = document.createElement("div");
     container.style.position = "absolute";
     container.style.top = bottom;
-    container.style.width = "250px";
-    container.style.height = "60px";
+    container.style.paddingLeft = "3%";
+    container.style.width = "48.5%";
+    container.style.height = "9%";
     container.style.display = "flex";
     container.style.background = "white";
     container.style.alignItems = "center";
-    container.style.justifyContent = "center";
+    container.style.justifyContent = "left";
     const label = document.createElement("label");
-    label.style.fontSize = "26px";
     label.style.fontFamily = "Verdana";
+    label.style.fontSize = "inherit";
     label.style.background = "white";
     label.innerHTML = text;
     container.appendChild(label);
     options.appendChild(container);
   }
-  const button = addButton("50%", null, "0px", "Done");
-  const cancel = addButton("0%", null, "0px", "Cancel");
-  const undo = addButton("50%", null, "55px", "Undo");
-  const clear = addButton("0%", null, "55px", "Clear");
-  const alignCentroid = addButton("25%", null, "116px", "Align Centroid");
-  polygonButton = addButton("0%", "0px", null, "Polygon");
-  circleButton = addButton("50%", "0px", null, "Circle");
-  addLine("60px", null);
-  addLabel("61px", "Restitution");
-  restitutionInput = addInput("61px", spawnRestitution);
-  addLabel("116px", "Static Friction");
-  staticFrictionInput = addInput("116px", spawnStaticFriction);
-  addLabel("171px", "Dynamic Friction");
-  dynamicFrictionInput = addInput("171px", spawnDynamicFriction);
-  addLabel("228px", "Density");
-  addLine(null, "115px");
-  densityInput = addInput("228px", spawnDensity);
+  const button = addButton("50.5%", null, "1%", "Done");
+  const cancel = addButton("1%", null, "1%", "Cancel");
+  const undo = addButton("50.5%", null, "12%", "Undo");
+  const clear = addButton("1%", null, "12%", "Clear");
+  const alignCentroid = addButton("25.5%", null, "24%", "Align Centroid");
+  polygonButton = addButton("1%", "1%", null, "Polygon");
+  circleButton = addButton("50.5%", "1%", null, "Circle");
+  addLine("12%", null);
+  addLabel("13%", "Restitution");
+  restitutionInput = addInput("13%", spawnRestitution);
+  addLabel("24%", "Static Friction");
+  staticFrictionInput = addInput("24%", spawnStaticFriction);
+  addLabel("35%", "Dynamic Friction");
+  dynamicFrictionInput = addInput("35%", spawnDynamicFriction);
+  addLabel("46%", "Density");
+  addLine(null, "23%");
+  densityInput = addInput("46%", spawnDensity);
   draftPoints.length = 0;
   polygonButton.onclick = () => {
     drawCircle = 0;
@@ -705,6 +702,7 @@ function showShapeEdit() {
     document.body.removeChild(centered);
     paused = false;
     form = null;
+    formGrid = null;
     document.getElementById("toolbar").querySelectorAll("button, input").forEach((element) => {
       element.disabled = false;
     });
@@ -754,6 +752,7 @@ function showShapeEdit() {
   form.appendChild(formCanvas);
   formGrid.appendChild(form);
   formGrid.appendChild(options);
+  resizeForm();
   paused = true;
   previousShapeList = Util.cloneArray(shapeList);
   previousShapeCount = previousShapeList.length;
