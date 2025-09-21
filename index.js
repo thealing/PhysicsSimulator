@@ -129,7 +129,7 @@ function init() {
     wallStart = null;
     wallDraft = null;
     wallElement = null;
-    for (const collider of groundBody.colliders) {
+    for (const collider of wallBody.colliders) {
       if (collider.element) {
         collider.element.remove();
         collider.destroy();
@@ -153,34 +153,9 @@ function init() {
       onDisplayClicked(event);
     }
   });
-  setTimeout(() => {
-    displayWidth = displaySvg.clientWidth;
-    displayHeight = displaySvg.clientHeight;
-    function createWalls() {
-      if (typeof groundBody != "undefined") {
-        groundBody.destroy();
-      }
-      displayWidth = displaySvg.clientWidth;
-      displayHeight = displaySvg.clientHeight;
-      const corner1 = new Vector2(0, 0);
-      const corner2 = new Vector2(displayWidth, 0);
-      const corner3 = new Vector2(displayWidth, displayHeight);
-      const corner4 = new Vector2(0, displayHeight);
-      groundBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
-      groundBody.createCollider(Geometry.createSegment(corner1, corner2), 1);
-      groundBody.createCollider(Geometry.createSegment(corner2, corner3), 1);
-      groundBody.createCollider(Geometry.createSegment(corner3, corner4), 1);
-      groundBody.createCollider(Geometry.createSegment(corner4, corner1), 1);
-      for (const collider of groundBody.colliders) {
-        collider.staticFriction = 1;
-        collider.dynamicFriction = 1;
-      }
-    }
-    createWalls();
-    window.addEventListener('resize', () => {
-        createWalls();
-    });
-  }, 0);
+  wallBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
+  displayWidth = 0;
+  displayHeight = 0;
   lastUpdate = performance.now();
   paused = false;
   springOriginBody = null;
@@ -189,7 +164,10 @@ function init() {
   springMouse = createSvgLine();
   sweeping = false;
   drawCircle = false;
-  shapeList = [Geometry.createSquare(-100, 0, 100), new Circle(new Vector2(100, 0), 100)];
+  shapeList = [
+    Geometry.createSquare(-100, 0, 100), 
+    new Circle(new Vector2(100, 0), 100)
+  ];
   draftPoints = [];
   form = null;
   drawMode = "2";
@@ -204,7 +182,31 @@ function init() {
   animate();
 }
 
+function createWalls() {
+  if (typeof groundBody != "undefined") {
+    groundBody.destroy();
+  }
+  displayWidth = displaySvg.clientWidth;
+  displayHeight = displaySvg.clientHeight;
+  const corner1 = new Vector2(0, 0);
+  const corner2 = new Vector2(displayWidth, 0);
+  const corner3 = new Vector2(displayWidth, displayHeight);
+  const corner4 = new Vector2(0, displayHeight);
+  groundBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
+  groundBody.createCollider(Geometry.createSegment(corner1, corner2), 1);
+  groundBody.createCollider(Geometry.createSegment(corner2, corner3), 1);
+  groundBody.createCollider(Geometry.createSegment(corner3, corner4), 1);
+  groundBody.createCollider(Geometry.createSegment(corner4, corner1), 1);
+  for (const collider of groundBody.colliders) {
+    collider.staticFriction = 1;
+    collider.dynamicFriction = 1;
+  }
+}
+
 function update() {
+  if (displayWidth != displaySvg.clientWidth || displayHeight != displaySvg.clientHeight) {
+    createWalls();
+  }
   toolbarHeaders.forEach((header) => {
     const count = header.dataset.groupSize;
     let elem = header;
@@ -414,7 +416,7 @@ function onDisplayClicked(event) {
   switch (Number(drawMode)) {
     case 1:
       if (wallStart && wallDraft) {
-        const collider = groundBody.createCollider(wallDraft, 1);
+        const collider = wallBody.createCollider(wallDraft, 1);
         collider.element = wallElement;
         collider.restitution = Number(wallRestitutionInput.value);
         collider.staticFriction = Number(wallFrictionInput.value);
@@ -486,7 +488,7 @@ function onDisplayClicked(event) {
       }
       else {
         if (clickedBody == null) {
-          clickedBody = groundBody;
+          clickedBody = wallBody;
         }
         springOriginBody = clickedBody;
         springOriginOffset = Vector2.subtract(point, clickedBody.position);
@@ -507,12 +509,12 @@ function deleteObjects() {
   let clickedCollider = null;
   let clickedBody = null;
   for (const collider of physicsWorld.colliders) {
-    if (collider.worldShape.testPoint(point, hitRadius) && (collider.body != groundBody || clickedCollider == null)) {
+    if (collider.worldShape.testPoint(point, hitRadius) && (collider.body != wallBody || clickedCollider == null)) {
       clickedCollider = collider;
       clickedBody = collider.body;
     }
   }
-  if (clickedBody == groundBody) {
+  if (clickedBody == wallBody) {
     if (deleteWallsInput.checked && clickedCollider.element) {
       clickedCollider.element.remove();
       clickedCollider.destroy();
