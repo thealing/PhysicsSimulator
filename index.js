@@ -556,6 +556,17 @@ function showShapeEdit() {
   formGrid.style.height = "100%";
   formGrid.style.alignItems = "center";
   centered.appendChild(formGrid);
+  function resizeForm() {
+    const maxWidth = window.innerWidth;
+    const baseWidth = 1000;
+    const scale = Math.min(1, maxWidth / baseWidth * 0.9);
+    formGrid.style.transform = `scale(${scale})`;
+    formGrid.style.transformOrigin = "middle center";
+    formGrid.style.width = `${baseWidth}px`;
+    formGrid.style.height = "500px";
+  }
+  resizeForm();
+  window.addEventListener("resize", resizeForm);
   form = document.createElement("div");
   form.style.background = "white";
   form.style.border = "1px solid black";
