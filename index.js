@@ -543,6 +543,8 @@ function deleteObjects() {
 function showShapeEdit() {
   const centered = document.createElement("div");
   document.body.appendChild(centered);
+  centered.style.background = "none";
+  centered.style.position = "absolute";
   centered.style.width = "100%";
   centered.style.height = "100%";
   centered.style.display = "flex";
@@ -598,8 +600,12 @@ function showShapeEdit() {
     button.style.border = "1px solid black";
     button.style.position = "absolute";
     button.style.left = left;
-    button.style.top ||= top;
-    button.style.bottom ||= bottom;
+    if (!button.style.top) {
+      button.style.top = top;
+    }
+    if (!button.style.bottom) {
+      button.style.bottom = bottom;
+    }
     button.style.width = "240px";
     button.style.height = "50px";
     button.style.fontSize = "30px";
@@ -630,8 +636,12 @@ function showShapeEdit() {
   function addLine(top, bottom) {
     const underline = document.createElement("div");
     underline.style.position = "absolute";
-    underline.style.top ||= top;
-    underline.style.bottom ||= bottom;
+    if (!underline.style.top) {
+      underline.style.top = top;
+    }
+    if (!underline.style.bottom) {
+      underline.style.bottom = bottom;
+    }
     underline.style.width = "100%";
     underline.style.height = "1px";
     underline.style.background = "black";

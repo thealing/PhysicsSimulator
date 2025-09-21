@@ -4,6 +4,8 @@
   padding: 0;
   border: none;
   outline: none;
+  min-width: 0;
+  min-height: 0;
   background: lightgray;
   color: black;
   accent-color: black;
@@ -17,13 +19,19 @@
 }
 
 html, body {
+  width: 100vw;
+  width: 100dvw;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
 }
 
+body {
+  display: flex;
+  flex-direction: column;
+}
+
 #header {
-  position: absolute;
   width: 100%;
   height: var(--header-height);
   line-height: var(--header-height);
@@ -35,12 +43,8 @@ html, body {
 }
 
 #layout {
-  position: absolute;
   display: flex;
-  top: var(--header-height);
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex: 1;
 }
 
 #content {
@@ -52,7 +56,6 @@ html, body {
 }
 
 #toolbar-container {
-  height: 100%;
   right: 0;
   bottom: 0;
   top: var(--header-height);
