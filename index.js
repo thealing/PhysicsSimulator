@@ -140,18 +140,12 @@ function init() {
     if (drawMode == "4" && deleteBySweepInput.checked) {
       sweeping = true;
     }
-    if (drawMode == "1") {
-      wallStart = new Vector2(mouseX, mouseY);
-    }
   });
   displaySvg.addEventListener("mouseup", (event) => {
     sweeping = false;
   });
   displaySvg.addEventListener("mouseleave", (event) => {
     sweeping = false;
-    if (wallStart) {
-      onDisplayClicked(event);
-    }
   });
   wallBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
   displayWidth = 0;
@@ -206,6 +200,17 @@ function createWalls() {
 function update() {
   if (displayWidth != displaySvg.clientWidth || displayHeight != displaySvg.clientHeight) {
     createWalls();
+  }
+  if (Number(drawMode) != 1) {
+    wallStart = null;
+    wallDraft = null;
+    if (wallElement) {
+      wallElement.remove();
+      wallElement = null;
+    }
+  }
+  if (Number(drawMode) != 3) {
+    springOriginBody = null;
   }
   toolbarHeaders.forEach((header) => {
     const count = header.dataset.groupSize;
@@ -421,8 +426,11 @@ function onDisplayClicked(event) {
         collider.restitution = Number(wallRestitutionInput.value);
         collider.staticFriction = Number(wallFrictionInput.value);
         collider.dynamicFriction = Number(wallFrictionInput.value);
+        wallStart = null;
       }
-      wallStart = null;
+      else if (drawMode == "1") {
+        wallStart = new Vector2(mouseX, mouseY);
+      }
       wallDraft = null;
       wallElement = null;
       break;
@@ -521,7 +529,7 @@ function deleteObjects() {
     }
     clickedBody = null;
   }
-  if (deleteBodiesInput.checked && clickedBody != null) {
+  if (deleteBodiesInput.checked && clickedBody != null && clickedBody != groundBody) {
     for (const spring of clickedBody.springs) {
       spring.element.remove();
     }
