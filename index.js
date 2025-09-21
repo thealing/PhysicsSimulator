@@ -31,7 +31,7 @@ function init() {
   deleteBodiesInput = document.getElementById("delete-bodies");
   deleteSpringsInput = document.getElementById("delete-springs");
   deleteBySweepInput = document.getElementById("delete-by-sweep");
-  toolbarHeaders = document.querySelectorAll("[id=\"title-container\"]");
+  toolbarHeaders = document.querySelectorAll(".title-container");
   toolbarHeaders.forEach((header) => {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.style.width = "20px";
@@ -49,7 +49,7 @@ function init() {
     header.onclick = () => {
       header.down = !header.down;
     }
-    if (header.attributes.drawMode) {
+    if (header.dataset.drawMode) {
       const button = document.createElement("input");
       button.type = "radio";
       button.style.width = "30px";
@@ -57,7 +57,7 @@ function init() {
       button.style.position = "absolute";
       button.style.left = "200px";
       button.style.top = "0px";
-      button.buttonMode = header.attributes.drawMode.value;
+      button.buttonMode = header.dataset.drawMode;
       header.appendChild(button);
       if (typeof drawModeButtons === "undefined") {
         drawModeButtons = [];
@@ -154,23 +154,32 @@ function init() {
     }
   });
   setTimeout(() => {
-    displaySize = Math.min(displaySvg.clientWidth, displaySvg.clientHeight);
-    displaySvg.style.width = displaySize + "px";
-    displaySvg.style.minHeight = displaySize + "px";
-    displaySvg.style.maxHeight = displaySize + "px";
-    const corner1 = new Vector2(0, 0);
-    const corner2 = new Vector2(displaySize, 0);
-    const corner3 = new Vector2(displaySize, displaySize);
-    const corner4 = new Vector2(0, displaySize);
-    groundBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
-    groundBody.createCollider(Geometry.createSegment(corner1, corner2), 1);
-    groundBody.createCollider(Geometry.createSegment(corner2, corner3), 1);
-    groundBody.createCollider(Geometry.createSegment(corner3, corner4), 1);
-    groundBody.createCollider(Geometry.createSegment(corner4, corner1), 1);
-    for (const collider of groundBody.colliders) {
-      collider.staticFriction = 1;
-      collider.dynamicFriction = 1;
+    displayWidth = displaySvg.clientWidth;
+    displayHeight = displaySvg.clientHeight;
+    function createWalls() {
+      if (typeof groundBody != "undefined") {
+        groundBody.destroy();
+      }
+      displayWidth = displaySvg.clientWidth;
+      displayHeight = displaySvg.clientHeight;
+      const corner1 = new Vector2(0, 0);
+      const corner2 = new Vector2(displayWidth, 0);
+      const corner3 = new Vector2(displayWidth, displayHeight);
+      const corner4 = new Vector2(0, displayHeight);
+      groundBody = physicsWorld.createBody(PhysicsBodyType.STATIC);
+      groundBody.createCollider(Geometry.createSegment(corner1, corner2), 1);
+      groundBody.createCollider(Geometry.createSegment(corner2, corner3), 1);
+      groundBody.createCollider(Geometry.createSegment(corner3, corner4), 1);
+      groundBody.createCollider(Geometry.createSegment(corner4, corner1), 1);
+      for (const collider of groundBody.colliders) {
+        collider.staticFriction = 1;
+        collider.dynamicFriction = 1;
+      }
     }
+    createWalls();
+    window.addEventListener('resize', () => {
+        createWalls();
+    });
   }, 0);
   lastUpdate = performance.now();
   paused = false;
@@ -197,7 +206,7 @@ function init() {
 
 function update() {
   toolbarHeaders.forEach((header) => {
-    const count = header.attributes.groupsize.nodeValue;
+    const count = header.dataset.groupSize;
     let elem = header;
     if (header.down) {
       header.arrow.setAttribute("d", "M3,10 L10,0 L17,10 Z");
@@ -216,8 +225,10 @@ function update() {
       }
     }
   });
-  for (const button of drawModeButtons) {
-    button.checked = button.buttonMode == drawMode;
+  if (typeof drawModeButtons != "undefined") {
+    for (const button of drawModeButtons) {
+      button.checked = button.buttonMode == drawMode;
+    }
   }
   if (sweeping) {
     deleteObjects();
@@ -239,9 +250,9 @@ function update() {
   }
   for (const body of physicsWorld.bodies) {
     body.updateWorldTransform();
-    let oob = true;
+    let oob = 0;
     for (const collider of body.colliders) {
-      if (Geometry.collideShapes(collider.worldShape, Geometry.createSquare(displaySize / 2, displaySize / 2, displaySize / 2))) {
+      if (Geometry.collideShapes(collider.worldShape, Geometry.createRect(0, 0, displayWidth, displayHeight))) {
         oob = false;
       }
     }

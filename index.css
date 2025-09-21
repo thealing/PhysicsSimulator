@@ -50,7 +50,6 @@ body {
   padding: var(--padding);
   padding-left: 0;
   background: lightgray;
-  border-left: solid 1px black;
 }
 
 #toolbar * {
@@ -61,22 +60,6 @@ body {
 
 #toolbar input[readonly] {
   background: rgb(190, 190, 190);
-}
-
-#toolbar #wide-container * {
-  height: var(--wide-height);
-  font-size: 17px;
-}
-
-#toolbar #title-container * {
-  left: 40px;
-  align-items: center;
-  justify-content: left;
-  font-size: 18px;
-  font-family: Arial, sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  width: 200px;
 }
 
 button:hover {
@@ -127,26 +110,8 @@ input {
   filter: brightness(82%);
 }
 
-#toolbar #form-container {
-  height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
-  grid-template-columns: 120px 120px;
-  grid-row-gap: var(--padding);
-}
-
-#toolbar #title-container {
-  height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
-  grid-template-columns: 200px;
-  grid-row-gap: var(--padding);
-  align-items: center;
-}
-
-#toolbar #wide-container {
-  height: calc(var(--row-count) * (var(--wide-height) + var(--padding)) - var(--padding));
-  grid-template-columns: 240px;
-  grid-row-gap: var(--padding);
-}
-
 #content {
+  border-right: solid 1px black;
   position: absolute;
   width: calc(100% - var(--toolbar-width));
   height: calc(100% - var(--header-height));
@@ -170,4 +135,55 @@ input {
 
 #content svg text {
   user-select: none;
+}
+
+#toolbar .form-container {
+  height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
+  grid-template-columns: 120px 120px;
+  grid-row-gap: var(--padding);
+}
+
+#toolbar .title-container {
+  height: calc(var(--row-count) * (var(--control-height) + var(--padding)) - var(--padding));
+  grid-template-columns: 200px;
+  grid-row-gap: var(--padding);
+  align-items: center;
+}
+
+#toolbar .wide-container {
+  height: calc(var(--row-count) * (var(--wide-height) + var(--padding)) - var(--padding));
+  grid-template-columns: 240px;
+  grid-row-gap: var(--padding);
+}
+
+#toolbar .wide-container * {
+  height: var(--wide-height);
+  font-size: 17px;
+}
+
+#toolbar .title-container * {
+  left: 40px;
+  align-items: center;
+  justify-content: left;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 200px;
+}
+
+#toolbar .wide-container label {
+  height: var(--wide-height);
+  font-size: 17px;
+}
+
+#toolbar .title-container label {
+  left: 40px;
+  align-items: center;
+  justify-content: left;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 200px;
 }

@@ -8,45 +8,45 @@
 <body>
   <div id="header">Physics Sandbox</div>
   <div id="toolbar">
-    <div class="container" id="title-container" style="--row-count: 1;" groupSize="1">
+    <div class="container title-container" style="--row-count: 1;" data-group-size="1">
       <label>Simulation Info</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 6;">
+    <div class="container form-container" style="--row-count: 6;">
       <label>Body Count</label>
-      <input id="body-count" type="string" value="" readonly />
+      <input id="body-count" type="text" value="" readonly>
       <label>Collider Count</label>
-      <input id="collider-count" type="string" value="" readonly />
+      <input id="collider-count" type="text" value="" readonly>
       <label>Rects Tested</label>
-      <input id="rect-test-count" type="string" value="" readonly />
+      <input id="rect-test-count" type="text" value="" readonly>
       <label>Shapes Tested</label>
-      <input id="shape-test-count" type="string" value="" readonly />
+      <input id="shape-test-count" type="text" value="" readonly>
       <label>Collisions</label>
-      <input id="collision-count" type="string" value="" readonly />
+      <input id="collision-count" type="text" value="" readonly>
       <label>Step Duration</label>
-      <input id="step-duration" type="string" value="" readonly />
+      <input id="step-duration" type="text" value="" readonly>
     </div>
     <div class="separator"></div>
-    <div class="container" id="title-container" style="--row-count: 1;" groupSize="2">
+    <div class="container title-container" style="--row-count: 1;" data-group-size="2">
       <label>Physics Settings</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 4;">
+    <div class="container form-container" style="--row-count: 4;">
       <label>Delta Time</label>
-      <input id="delta-time" type="number" value="10" step="1" />
+      <input id="delta-time" type="number" value="10" step="1">
       <label>Gravity</label>
-      <input id="gravity" type="number" value="500" step="100" />
+      <input id="gravity" type="number" value="500" step="100">
       <label>Corr. Vel. Gain</label>
-      <input id="cvg" type="number" value="0.5" step="0.1" />
+      <input id="cvg" type="number" value="0.5" step="0.1">
       <label>Corr. Time Min</label>
-      <input id="ctm" type="number" value="10"  step="5" />
+      <input id="ctm" type="number" value="10"  step="5">
     </div>
-    <div class="container" id="wide-container" style="--row-count: 1;">
+    <div class="container wide-container" style="--row-count: 1;">
       <button id="apply-button">Apply</button>
     </div>
     <div class="separator"></div>
-    <div class="container" id="title-container" style="--row-count: 1;" groupSize="1" drawMode="1">
+    <div class="container title-container" style="--row-count: 1;" data-group-size="1" data-draw-mode="1">
       <label>Add Walls</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 3;">
+    <div class="container form-container" style="--row-count: 3;">
       <label>Type</label>
       <select id="wall-type">
         <option value="line" selected="selected">Line</option>
@@ -54,53 +54,53 @@
         <option value="oval">Oval</option>
       </select>
       <label>Restitution</label>
-      <input id="wall-restitution" type="number" value="0.1" step="0.1" />
+      <input id="wall-restitution" type="number" value="0.1" step="0.1">
       <label>Friction</label>
-      <input id="wall-friction" type="number" value="0.5" step="0.1" />
+      <input id="wall-friction" type="number" value="0.5" step="0.1">
     </div>
     <div class="separator"></div>
-    <div class="container" id="title-container" style="--row-count: 1;" groupSize="2" drawMode="2">
+    <div class="container title-container" style="--row-count: 1;" data-group-size="2" data-draw-mode="2">
       <label>Add Bodies</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 4;">
+    <div class="container form-container" style="--row-count: 4;">
       <label>Rows</label>
-      <input id="row-count" type="number" value="2" />
+      <input id="row-count" type="number" value="2">
       <label>Columns</label>
-      <input id="column-count" type="number" value="3" />
+      <input id="column-count" type="number" value="3">
       <label>Size</label>
-      <input id="spawn-size" type="number" value="100" />
+      <input id="spawn-size" type="number" value="100">
       <label>Gap</label>
-      <input id="spawn-gap" type="number" value="5" />
+      <input id="spawn-gap" type="number" value="5">
     </div>
-    <div class="container" id="wide-container" style="--row-count: 1;">
+    <div class="container wide-container" style="--row-count: 1;">
       <button id="edit-button">Edit Shape</button>
     </div>
     <div class="separator"></div>
-    <div class="container" id="title-container" style="--row-count: 1;" groupSize="1" drawMode="3">
+    <div class="container title-container" style="--row-count: 1;" data-group-size="1" data-draw-mode="3">
       <label>Add Springs</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 2;">
+    <div class="container form-container" style="--row-count: 2;">
       <label>Stiffness</label>
-      <input id="stifness" type="number" value="100" />
+      <input id="stifness" type="number" value="100">
       <label>Resting Length</label>
-      <input id="resting-length" type="number" value="-1" />
+      <input id="resting-length" type="number" value="-1">
     </div>
     <div class="separator"></div>
-    <div class="container" id="title-container" style="--row-count: 1;" groupSize="1" drawMode="4">
+    <div class="container title-container" style="--row-count: 1;" data-group-size="1" data-draw-mode="4">
       <label>Delete Objects</label>
     </div>
-    <div class="container" id="form-container" style="--row-count: 4;">
+    <div class="container form-container" style="--row-count: 4;">
       <label>Delete Walls</label>
-      <input type="checkbox" id="delete-walls" />
+      <input type="checkbox" id="delete-walls">
       <label>Delete Bodies</label>
-      <input type="checkbox" id="delete-bodies" checked="true" />
+      <input type="checkbox" id="delete-bodies" checked>
       <label>Delete Springs</label>
-      <input type="checkbox" id="delete-springs" checked="true" />
+      <input type="checkbox" id="delete-springs" checked>
       <label>Sweep</label>
-      <input type="checkbox" id="delete-by-sweep" />
+      <input type="checkbox" id="delete-by-sweep">
     </div>
     <div class="separator"></div>
-    <div class="container" id="wide-container">
+    <div class="container wide-container">
       <button id="pause-button">Pause</button>
       <button id="clear-button">Clear</button>
     </div>
@@ -115,4 +115,3 @@
   <script src="index.js"></script>
 </body>
 </html>
-
