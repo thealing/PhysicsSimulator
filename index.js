@@ -559,11 +559,13 @@ function showShapeEdit() {
   function resizeForm() {
     const maxWidth = window.innerWidth;
     const baseWidth = 1000;
-    const scale = Math.min(1, maxWidth / baseWidth * 0.9);
+    const maxHeight = window.innerHeight;
+    const baseHeight = 500;
+    const scale = Math.min(1, Math.min(maxHeight / baseHeight, maxWidth / baseWidth) * 0.9);
     formGrid.style.transform = `scale(${scale})`;
     formGrid.style.transformOrigin = "middle center";
     formGrid.style.width = `${baseWidth}px`;
-    formGrid.style.height = "500px";
+    formGrid.style.height = `${baseHeight}px`;
   }
   resizeForm();
   window.addEventListener("resize", resizeForm);
